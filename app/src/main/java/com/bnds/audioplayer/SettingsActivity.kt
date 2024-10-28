@@ -1,5 +1,7 @@
 package com.bnds.audioplayer
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
@@ -9,6 +11,7 @@ private const val TITLE_TAG = "settingsActivityTitle"
 
 class SettingsActivity : AppCompatActivity(),
     PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
+    private var svar1: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +30,11 @@ class SettingsActivity : AppCompatActivity(),
             }
         }
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        var intent : Intent = getIntent()
+        if (intent != null && intent.hasExtra("Settings Values")) {
+            svar1 = intent.getIntExtra("Settings Values", 0)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -36,10 +44,18 @@ class SettingsActivity : AppCompatActivity(),
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        if (supportFragmentManager.popBackStackImmediate()) {
+        if (supportFragmentManager.backStackEntryCount == 0) {
+            val intent2 = Intent()
+            intent2.putExtra("result", svar1)
+            setResult(Activity.RESULT_OK, intent2)
+            finish()
             return true
         }
-        return super.onSupportNavigateUp()
+        return if (supportFragmentManager.popBackStackImmediate()) {
+            true
+        } else {
+            super.onSupportNavigateUp()
+        }
     }
 
     override fun onPreferenceStartFragment(
