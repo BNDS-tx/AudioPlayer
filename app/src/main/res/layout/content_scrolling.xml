@@ -8,10 +8,22 @@
     tools:context=".PlayListActivity"
     tools:showIn="@layout/activity_play_list">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
-        android:text="@string/large_text" />
+        android:orientation="vertical"
+        android:padding="@dimen/text_margin">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Album" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/playListRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false" />
+    </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>
