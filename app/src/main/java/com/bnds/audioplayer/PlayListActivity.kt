@@ -6,10 +6,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsetsController
+import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
@@ -18,11 +21,10 @@ class PlayListActivity : AppCompatActivity() {
 
     private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
     private lateinit var binding: ActivityPlayListBinding
-
-    data class Music(val title: String, val artist: String)
+    private lateinit var musicAdapter: MusicAdapter
 
     class MusicAdapter(
-        private val musicList: List<Music>,
+        private var musicList: List<Music>,
         private val onItemClick: (Music) -> Unit  //
     ) : RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
 
@@ -60,22 +62,22 @@ class PlayListActivity : AppCompatActivity() {
         binding = ActivityPlayListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+
+        // 设置状态栏的文本颜色为浅色或深色
+        val insetsController = window.insetsController
+        insetsController?.setSystemBarsAppearance(
+            WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+            WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+        ) // 根据你的设计需求调整
+
         var var1: Int = 1
 
-        val recyclerView = findViewById<RecyclerView>(R.id.playListRecyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        val musicScanner = Scanner(this)
+        var musicList = musicScanner.scanMusicFiles()
 
-        val musicList = listOf(
-            Music("Song 1", "Artist 1"),
-            Music("Song 2", "Artist 2"),
-            Music("Song 3", "Artist 3"),
-            Music("Song 4", "Artist 4"),
-            Music("Song 5", "Artist 5"),
-            Music("Song 6", "Artist 6"),
-            Music("Song 7", "Artist 7"),
-            Music("Song 8", "Artist 8"),
-            // Add more songs
-        )
+        var recyclerView = findViewById<RecyclerView>(R.id.playListRecyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
 
         activityResultLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
@@ -89,10 +91,11 @@ class PlayListActivity : AppCompatActivity() {
         recyclerView.adapter = MusicAdapter(musicList) { music ->
             val tvar1 = var1
             val intent : Intent = Intent(this, PlayActivity::class.java).apply(
-//                putExtra("musicTitle", music.title)
-//                putExtra("musicArtist", music.artist)
                 fun Intent.() {
                     putExtra("Music Settings", tvar1)
+                    putExtra("musicTitle", music.title)
+                    putExtra("musicArtist", music.artist)
+                    putExtra("musicUri", music.uri)
                 }
             )
             activityResultLauncher.launch(intent)
@@ -100,9 +103,17 @@ class PlayListActivity : AppCompatActivity() {
 
         setSupportActionBar(findViewById(R.id.toolbar))
         binding.toolbarLayout.title = "Play List"
-        binding.fab.setOnClickListener {
+        val refreshButton = findViewById<Button>(R.id.refreshButton)
+        refreshButton.setOnClickListener {
+            musicList = musicScanner.scanMusicFiles()
+            recyclerView = findViewById<RecyclerView>(R.id.playListRecyclerView)
+            recyclerView.layoutManager = LinearLayoutManager(this)
+        }
+
+        val settingsButton = findViewById<Button>(R.id.settingsButton)
+        settingsButton.setOnClickListener {
             val tvar1 = var1
-            val intent : Intent = Intent(this, SettingsActivity::class.java).apply(
+            val intent: Intent = Intent(this, SettingsActivity::class.java).apply(
                 fun Intent.() {
                     putExtra("Settings Values", tvar1)
                 }

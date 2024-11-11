@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 
@@ -30,6 +31,8 @@ class SettingsActivity : AppCompatActivity(),
             }
         }
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        WindowCompat.setDecorFitsSystemWindows(window, true)
 
         var intent : Intent = getIntent()
         if (intent != null && intent.hasExtra("Settings Values")) {
