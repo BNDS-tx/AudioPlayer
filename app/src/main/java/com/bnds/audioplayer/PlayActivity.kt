@@ -1,18 +1,18 @@
 package com.bnds.audioplayer
 
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.provider.MediaStore.Audio.Artists
 import android.widget.Button
-import android.widget.SeekBar
+import android.widget.ImageView
+import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.android.material.slider.Slider
 
 class PlayActivity : AppCompatActivity() {
     private var mvar1: Int = 0
@@ -45,8 +45,7 @@ class PlayActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        setTitle(R.string.title_activity_player)
-        if (musicPosition != -1) { setTitle(titleList[musicPosition]) }
+        updateTitle()
 
         musicPlayer = Player.getInstance(this)
         if (new) {
@@ -68,9 +67,11 @@ class PlayActivity : AppCompatActivity() {
             pauseOrContinue()
         }
 
-        val progressBar = findViewById<SeekBar>(R.id.progressBar)
-        progressBar.max = musicPlayer.getDuration()
+        val progressBar = findViewById<Slider>(R.id.progressBar)
+        progressBar.valueTo = musicPlayer.getDuration().toFloat()
         updateBar(progressBar, musicPlayer.getProgress())
+
+        updateArt()
 
         val nextButton = findViewById<Button>(R.id.playNextButton)
         nextButton.setOnClickListener() {
@@ -87,6 +88,10 @@ class PlayActivity : AppCompatActivity() {
             endActivity()
         }
 
+        onBackPressedDispatcher.addCallback(this) {
+            endActivity()
+        }
+
     }
 
     private fun pauseOrContinue() {
@@ -95,7 +100,8 @@ class PlayActivity : AppCompatActivity() {
             musicPosition = 0
             musicPlayer.play(uriList[musicPosition])
         }
-        setTitle(titleList[musicPosition])
+        updateTitle()
+        updateArt()
     }
 
     private fun jumpAnotherSong(next: Boolean) {
@@ -108,7 +114,8 @@ class PlayActivity : AppCompatActivity() {
             musicPosition = (musicPosition - 1 + uriList.size) % uriList.size
             musicPlayer.play(uriList[musicPosition])
         }
-        setTitle(titleList[musicPosition])
+        updateTitle()
+        updateArt()
     }
 
     private fun endActivity() {
@@ -120,8 +127,23 @@ class PlayActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun updateBar(progressBar: SeekBar, progress: Int) {
-        progressBar.progress = progress
+    private fun updateBar(progressBar: Slider, progress: Int) {
+        progressBar.value = progress.toFloat()
         handler.postDelayed({ updateBar(progressBar, musicPlayer.getProgress()) }, 500)
+    }
+
+    private fun updateTitle() {
+        val titleText = findViewById<androidx.appcompat.widget.AppCompatTextView>(R.id.titleText)
+        setTitle(R.string.title_activity_player)
+        if (musicPosition != -1) { setTitle(titleList[musicPosition]) }
+        titleText.text = title
+    }
+
+    private fun updateArt() {
+        val albumArt = findViewById<ImageView>(R.id.albumArt)
+        if (musicPosition != -1) {
+            val albumArtBitmap = musicPlayer.getAlbumArt(uriList[musicPosition])
+            albumArt.setImageBitmap(albumArtBitmap)
+        }
     }
 }

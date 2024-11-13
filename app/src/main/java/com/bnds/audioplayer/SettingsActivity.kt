@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.WindowInsetsController
+import android.widget.Button
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -14,8 +16,7 @@ import androidx.preference.PreferenceFragmentCompat
 
 private const val TITLE_TAG = "settingsActivityTitle"
 
-class SettingsActivity : AppCompatActivity(),
-    PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
+class SettingsActivity : AppCompatActivity() {
     private var svar1: Int = 0
     private var position: Int = -1
     private var alreadyPlayed: Boolean = false
@@ -35,23 +36,6 @@ class SettingsActivity : AppCompatActivity(),
             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
         )
-        window.statusBarColor = ContextCompat.getColor(this, R.color.purple_500)
-
-        if (savedInstanceState == null) {
-            supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.settings, HeaderFragment())
-                .commit()
-        } else {
-            title = savedInstanceState.getCharSequence(TITLE_TAG)
-        }
-        supportFragmentManager.addOnBackStackChangedListener {
-            if (supportFragmentManager.backStackEntryCount == 0) {
-                setTitle(R.string.title_activity_settings)
-            }
-        }
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
         WindowCompat.setDecorFitsSystemWindows(window, true)
 
         var intent : Intent = getIntent()
@@ -59,72 +43,23 @@ class SettingsActivity : AppCompatActivity(),
             svar1 = intent.getIntExtra("Settings Values", 0)
             position = intent.getIntExtra("musicPosition", -1)
         }
-    }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        // Save current activity title so we can set it again after a configuration change
-        outState.putCharSequence(TITLE_TAG, title)
-    }
-
-    override fun onSupportNavigateUp(): Boolean {
-        if (supportFragmentManager.backStackEntryCount == 0) {
-            val intent2 = Intent()
-            intent2.putExtra("result", svar1)
-            intent2.putExtra("musicPosition", position)
-            intent2.putExtra("alreadyPlayed", alreadyPlayed)
-            setResult(Activity.RESULT_OK, intent2)
-            finish()
-            return true
+        val backButton = findViewById<Button>(R.id.backButton)
+        backButton.setOnClickListener() {
+            endActivity()
         }
-        return if (supportFragmentManager.popBackStackImmediate()) {
-            true
-        } else {
-            super.onSupportNavigateUp()
+
+        onBackPressedDispatcher.addCallback(this) {
+            endActivity()
         }
     }
 
-    override fun onPreferenceStartFragment(
-        caller: PreferenceFragmentCompat,
-        pref: Preference
-    ): Boolean {
-        // Instantiate the new Fragment
-        val args = pref.extras
-        val fragment = pref.fragment?.let {
-            supportFragmentManager.fragmentFactory.instantiate(
-                classLoader,
-                it
-            ).apply {
-                arguments = args
-                setTargetFragment(caller, 0)
-            }
-        }
-        // Replace the existing Fragment with the new Fragment
-        if (fragment != null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.settings, fragment)
-                .addToBackStack(null)
-                .commit()
-        }
-        title = pref.title
-        return true
-    }
-
-    class HeaderFragment : PreferenceFragmentCompat() {
-        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-            setPreferencesFromResource(R.xml.header_preferences, rootKey)
-        }
-    }
-
-    class MessagesFragment : PreferenceFragmentCompat() {
-        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-            setPreferencesFromResource(R.xml.messages_preferences, rootKey)
-        }
-    }
-
-    class SyncFragment : PreferenceFragmentCompat() {
-        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-            setPreferencesFromResource(R.xml.sync_preferences, rootKey)
-        }
+    private fun endActivity() {
+        val intent2 = Intent()
+        intent2.putExtra("result", svar1)
+        intent2.putExtra("musicPosition", position)
+        intent2.putExtra("alreadyPlayed", alreadyPlayed)
+        setResult(Activity.RESULT_OK, intent2)
+        finish()
     }
 }

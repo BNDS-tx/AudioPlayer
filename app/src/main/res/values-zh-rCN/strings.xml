@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="menu_settings">设置</string>
-    <string name="title_activity_play_list">音频列表</string>
+    <string name="title_activity_play_list">音乐列表</string>
     <string name="action_settings">设置</string>
     <string name="title_activity_settings">设置</string>
     <string name="jump_back">返回</string>
     <string name="defualt_playing">暂无播放</string>
     <string name="title_activity_player">暂无播放中的音乐</string>
+    <string name="album_art">专辑图片</string>
 </resources>

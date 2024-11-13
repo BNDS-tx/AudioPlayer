@@ -8,21 +8,13 @@
     <string name="title_activity_player">AudioPlayer: No Current Music</string>
 
     <!-- Preference Titles -->
-    <string name="messages_header">Messages</string>
-    <string name="sync_header">Sync</string>
 
     <!-- Messages Preferences -->
-    <string name="signature_title">Your signature</string>
-    <string name="reply_title">Default reply action</string>
 
     <!-- Sync Preferences -->
-    <string name="sync_title">Sync email periodically</string>
-    <string name="attachment_title">Download incoming attachments</string>
-    <string name="attachment_summary_on">Automatically download attachments for incoming emails
-    </string>
-    <string name="attachment_summary_off">Only download attachments when manually requested</string>
     <string name="title_activity_play_list">Album List</string>
     <string name="action_settings">Settings</string>
     <string name="jump_back">Back</string>
     <string name="defualt_playing">No music playing now</string>
+    <string name="album_art">Album Art</string>
 </resources>

@@ -1,6 +1,9 @@
 package com.bnds.audioplayer
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
@@ -90,5 +93,24 @@ class Player private constructor(private val context: Context) {
 
     fun seekTo(progress: Int) {
         mediaPlayer.skipTo(progress)
+    }
+
+    fun getAlbumArt(fileUri: Uri): Bitmap? {
+        val filePath = getFilePathFromUri(context, fileUri)
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(filePath) // 设置 MP3 文件路径
+            val embeddedPicture = retriever.embeddedPicture // 获取嵌入的专辑封面字节数组
+            return if (embeddedPicture != null) {
+                BitmapFactory.decodeByteArray(embeddedPicture, 0, embeddedPicture.size) // 转换为 Bitmap
+            } else {
+                null // 如果没有嵌入的图片返回 null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return null
+        } finally {
+            retriever.release() // 释放资源
+        }
     }
 }

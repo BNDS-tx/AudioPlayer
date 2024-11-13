@@ -38,8 +38,6 @@ class PlayListActivity : AppCompatActivity() {
             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
         ) // 根据你的设计需求调整
 
-        window.statusBarColor = resources.getColor(R.color.purple_500, theme)
-
         setTitle(R.string.title_activity_play_list)
 
         val mediaPlayer = Player.getInstance(this)
