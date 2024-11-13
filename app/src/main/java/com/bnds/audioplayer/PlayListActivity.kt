@@ -3,12 +3,9 @@ package com.bnds.audioplayer
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.util.Log
 import android.view.WindowInsetsController
 import android.widget.Button
-import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -16,45 +13,15 @@ import androidx.core.view.WindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class PlayListActivity : AppCompatActivity() {
 
     private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
     private lateinit var binding: ActivityPlayListBinding
-    private lateinit var musicAdapter: MusicAdapter
-
-    class MusicAdapter(
-        private var musicList: List<Music>,
-        private val onItemClick: (Music) -> Unit  //
-    ) : RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
-
-        inner class MusicViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            val title: TextView = itemView.findViewById(R.id.musicTitle)
-            val artist: TextView = itemView.findViewById(R.id.musicArtist)
-
-            init {
-                itemView.setOnClickListener {
-                    val position = bindingAdapterPosition // 使用 bindingAdapterPosition
-                    if (position != RecyclerView.NO_POSITION) { // 确保位置有效
-                        onItemClick(musicList[position])  // 调用点击事件
-                    }
-                }
-            }
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MusicViewHolder {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_music, parent, false)
-            return MusicViewHolder(view)
-        }
-
-        override fun onBindViewHolder(holder: MusicViewHolder, position: Int) {
-            val music = musicList[position]
-            holder.title.text = music.title
-            holder.artist.text = music.artist
-        }
-
-        override fun getItemCount(): Int = musicList.size
-    }
+    private var musicList: List<Music> = emptyList()
+    private var var1: Int = 0
+    private var musicPosition: Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,58 +34,131 @@ class PlayListActivity : AppCompatActivity() {
         // 设置状态栏的文本颜色为浅色或深色
         val insetsController = window.insetsController
         insetsController?.setSystemBarsAppearance(
-            WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+            0,
             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
         ) // 根据你的设计需求调整
 
-        var var1: Int = 1
+        window.statusBarColor = resources.getColor(R.color.purple_500, theme)
 
-        val musicScanner = Scanner(this)
-        var musicList = musicScanner.scanMusicFiles()
+        setTitle(R.string.title_activity_play_list)
 
-        var recyclerView = findViewById<RecyclerView>(R.id.playListRecyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        val mediaPlayer = Player.getInstance(this)
 
         activityResultLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result ->
             if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                val tvar1 = result.data!!.getIntExtra("Settings Values", 0)
+                val tvar1 = result.data!!.getIntExtra("result", 0)
+                val currentPosition = result.data!!.getIntExtra("musicPosition", 0)
                 var1 = tvar1
+                Log.d("MyTag", "currentPosition = $currentPosition")
+                musicPosition = currentPosition
+                refreshMusicList()
+                display(findViewById(R.id.jumpToPlayButton))
             }
+            val isNull = (result.data == null)
+            Log.d("MyTag", "is null = $isNull")
         }
 
+        refreshMusicList()
+
+        setSupportActionBar(findViewById(R.id.toolbar))
+        val refreshButton = findViewById<FloatingActionButton>(R.id.refreshButton)
+        refreshButton.setOnClickListener {
+            refreshMusicList()
+        }
+
+        val settingsButton = findViewById<Button>(R.id.settingsButton)
+        settingsButton.setOnClickListener {
+            openSettingsActivity()
+        }
+
+        val playButton = findViewById<Button>(R.id.playButton)
+        playButton.setOnClickListener {
+            playController(mediaPlayer)
+        }
+
+        val toPlayButton = findViewById<Button>(R.id.jumpToPlayButton)
+        display(toPlayButton)
+        toPlayButton.setOnClickListener {
+            openPlayActivity(musicPosition)
+        }
+
+    }
+
+    private fun refreshMusicList() {
+        val musicScanner = Scanner(this)
+        musicList = musicScanner.scanMusicFiles()
+        val titleList = musicList.map { it.title }
+        val artistList = musicList.map { it.artist }
+        val uriList = musicList.map { it.uri.toString() }
+        val recyclerView = findViewById<RecyclerView>(R.id.playListRecyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = MusicAdapter(musicList) { music ->
             val tvar1 = var1
             val intent : Intent = Intent(this, PlayActivity::class.java).apply(
                 fun Intent.() {
                     putExtra("Music Settings", tvar1)
-                    putExtra("musicTitle", music.title)
-                    putExtra("musicArtist", music.artist)
-                    putExtra("musicUri", music.uri)
+                    putExtra("musicPosition", musicList.indexOf(music))
+                    putExtra("musicTitleList", ArrayList(titleList))
+                    putExtra("musicArtistList", ArrayList(artistList))
+                    putExtra("musicUriList", ArrayList(uriList))
+                    putExtra("newSong", true)
                 }
             )
             activityResultLauncher.launch(intent)
         }
+    }
 
-        setSupportActionBar(findViewById(R.id.toolbar))
-        binding.toolbarLayout.title = "Play List"
-        val refreshButton = findViewById<Button>(R.id.refreshButton)
-        refreshButton.setOnClickListener {
-            musicList = musicScanner.scanMusicFiles()
-            recyclerView = findViewById<RecyclerView>(R.id.playListRecyclerView)
-            recyclerView.layoutManager = LinearLayoutManager(this)
-        }
+    private fun openSettingsActivity() {
+        val tvar1 = var1
+        val intent: Intent = Intent(this, SettingsActivity::class.java).apply(
+            fun Intent.() {
+                putExtra("Settings Values", tvar1)
+                putExtra("musicPosition", musicPosition)
+            }
+        )
+        activityResultLauncher.launch(intent)
+    }
 
-        val settingsButton = findViewById<Button>(R.id.settingsButton)
-        settingsButton.setOnClickListener {
-            val tvar1 = var1
-            val intent: Intent = Intent(this, SettingsActivity::class.java).apply(
-                fun Intent.() {
-                    putExtra("Settings Values", tvar1)
-                }
-            )
-            activityResultLauncher.launch(intent)
+    private fun openPlayActivity(position: Int) {
+        val tvar1 = var1
+        val musicScanner = Scanner(this)
+        musicList = musicScanner.scanMusicFiles()
+        val titleList = musicList.map { it.title }
+        val artistList = musicList.map { it.artist }
+        val uriList = musicList.map { it.uri.toString() }
+        val intent = Intent(this, PlayActivity::class.java).apply(
+            fun Intent.() {
+                putExtra("Music Settings", tvar1)
+                putExtra("musicPosition", position)
+                putExtra("musicTitleList", ArrayList(titleList))
+                putExtra("musicArtistList", ArrayList(artistList))
+                putExtra("musicUriList", ArrayList(uriList))
+            }
+        )
+        activityResultLauncher.launch(intent)
+    }
+
+    private fun playController(mediaPlayer: Player) {
+        if (musicPosition != -1) {
+            mediaPlayer.pauseAndResume()
+        } else {
+            mediaPlayer.play(musicList[0].uri)
+            musicPosition = 0
+            display(findViewById(R.id.jumpToPlayButton))
         }
+    }
+
+    private fun display(button: Button) {
+        if (musicPosition != -1) {
+            button.text = musicList[musicPosition].title
+        } else {
+            button.text = getString(R.string.defualt_playing)
+        }
+    }
+
+    private fun checkPosition() {
+
     }
 }

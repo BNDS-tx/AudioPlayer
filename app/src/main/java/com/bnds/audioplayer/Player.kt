@@ -1,9 +1,10 @@
 package com.bnds.audioplayer
 
 import android.content.Context
-import android.media.MediaPlayer
 import android.net.Uri
+import android.provider.MediaStore
 import android.util.Log
+import com.bnds.audioplayer.AudiobookPlayer.AudiobookPlayerState
 
 class Player private constructor(private val context: Context) {
 
@@ -19,77 +20,75 @@ class Player private constructor(private val context: Context) {
         }
     }
 
-    private var mediaPlayer: MediaPlayer? = null
+    var mediaPlayer = AudiobookPlayer()
+    protected var state: buttonIconState = buttonIconState.NOT_PLAYING_NOT_READY
 
-    /**
-     * 播放音乐
-     * @param uri 音乐文件的 URI
-     */
+    enum class buttonIconState {
+        PLAYING,
+        NOT_PLAYING_READY,
+        NOT_PLAYING_NOT_READY
+    }
+
+    private fun getFilePathFromUri(context: Context, uri: Uri): String? {
+        var filePath: String? = null
+        if ("content".equals(uri.scheme, ignoreCase = true)) {
+            val projection = arrayOf(MediaStore.Audio.Media.DATA)
+            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+                    filePath = cursor.getString(columnIndex)
+                }
+            }
+        } else if ("file".equals(uri.scheme, ignoreCase = true)) {
+            filePath = uri.path
+        }
+        return filePath
+    }
+
     fun play(uri: Uri) {
         try {
-            if (mediaPlayer == null) {
-                mediaPlayer = MediaPlayer().apply {
-                    setDataSource(context, uri)
-                    prepare()
-                    start()
-                    setOnCompletionListener {
-                        stop()
-                    }
-                }
-            } else {
-                mediaPlayer?.apply {
-                    reset()
-                    setDataSource(context, uri)
-                    prepare()
-                    start()
-                }
+            if (mediaPlayer.getState() != AudiobookPlayerState.STOPPED) {
+                mediaPlayer.stop()
             }
+            mediaPlayer.apply {
+                load(getFilePathFromUri(context, uri), 1F)
+            }
+            this.state = buttonIconState.PLAYING
         } catch (e: Exception) {
-            Log.e("Player", "播放音乐失败: ${e.message}")
+            Log.e("Player", "Music Player Error: ${e.message}")
         }
     }
 
-    /**
-     * 暂停播放
-     */
-    fun pause() {
-        mediaPlayer?.let {
-            if (it.isPlaying) {
+    fun pauseAndResume() {
+        mediaPlayer.let {
+            if (mediaPlayer.getState() == AudiobookPlayerState.PLAYING) {
                 it.pause()
+                this.state = buttonIconState.NOT_PLAYING_READY
+            } else if (mediaPlayer.getState() == AudiobookPlayerState.PAUSED) {
+                it.play()
+                this.state = buttonIconState.PLAYING
             }
         }
     }
 
-    /**
-     * 继续播放
-     */
-    fun resume() {
-        mediaPlayer?.let {
-            if (!it.isPlaying) {
-                it.start()
-            }
-        }
-    }
-
-    /**
-     * 停止播放
-     */
     fun stop() {
-        mediaPlayer?.let {
-            if (it.isPlaying) {
+        mediaPlayer.let {
+            if (mediaPlayer.getState() != AudiobookPlayerState.STOPPED) {
                 it.stop()
-                it.reset()
-                it.release()
-                mediaPlayer = null
+                this.state = buttonIconState.NOT_PLAYING_NOT_READY
             }
         }
     }
 
-    /**
-     * 释放 MediaPlayer 资源
-     */
-    fun release() {
-        mediaPlayer?.release()
-        mediaPlayer = null
+    fun getDuration() : Int {
+        return mediaPlayer.mediaPlayer.duration
+    }
+
+    fun getProgress() : Int {
+        return mediaPlayer.getProgress()
+    }
+
+    fun seekTo(progress: Int) {
+        mediaPlayer.skipTo(progress)
     }
 }
