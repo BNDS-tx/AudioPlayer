@@ -8,4 +8,10 @@
     <string name="defualt_playing">暂无播放</string>
     <string name="title_activity_player">暂无播放中的音乐</string>
     <string name="album_art">专辑图片</string>
+    <string name="title_play_failure">播放音乐失败！</string>
+    <string name="alart_button_sidmiss">确定</string>
+    <string name="expection_alart">播放器遇到错误，无法播放音频</string>
+    <string name="continue_play">音乐结束时自动播放下一首</string>
+    <string name="speed_play">播放速度</string>
+    <string name="null_alart">未找到可播放音乐</string>
 </resources>

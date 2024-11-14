@@ -28,9 +28,13 @@
                 android:id="@+id/backButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/button_circule"
+                android:background="@drawable/button_circle"
                 android:gravity="center"
-                android:text="@string/jump_back" />
+                android:text="@string/jump_back"
+                app:icon="@drawable/ic_arrow_back_24px"
+                app:iconSize="20dp"
+                android:paddingLeft="15dp"
+                android:paddingRight="15dp"/>
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/titleText"
@@ -40,6 +44,43 @@
                 android:text="@string/title_activity_player"
                 android:textSize="20sp" />
         </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/speedControl"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="200dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintWidth_percent="0.8">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/speedSlower"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:drawableEnd="@drawable/ic_fast_rewind_24px"/>
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/speedShow"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:gravity="center"/>
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/speedFaster"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:drawableStart="@drawable/ic_fast_forward_24px"/>
+
     </LinearLayout>
 
     <com.google.android.material.slider.Slider
@@ -54,40 +95,46 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintWidth_percent="0.8" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/playButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="85dp"
+        android:layout_height="85dp"
+        android:background="@drawable/button_circle"
+        app:iconSize="55dp"
+        android:padding="15dp"
         android:layout_marginBottom="50dp"
-        android:width="30pt"
-        android:height="30pt"
-        android:background="@drawable/button_circule"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/playPreviousButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="50dp"
         android:width="30pt"
         android:height="15pt"
-        android:background="@drawable/button_circule"
+        android:background="@drawable/button_circle"
+        app:icon="@drawable/ic_skip_previous_24px"
+        app:iconSize="35dp"
+        android:padding="27dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.15"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/playNextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="50dp"
         android:width="30pt"
         android:height="15pt"
-        android:background="@drawable/button_circule"
+        android:background="@drawable/button_circle"
+        app:icon="@drawable/ic_skip_next_24px"
+        app:iconSize="35dp"
+        android:padding="27dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.85"

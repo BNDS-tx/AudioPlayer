@@ -9,12 +9,15 @@
 
     <!-- Preference Titles -->
 
-    <!-- Messages Preferences -->
-
-    <!-- Sync Preferences -->
     <string name="title_activity_play_list">Album List</string>
     <string name="action_settings">Settings</string>
     <string name="jump_back">Back</string>
     <string name="defualt_playing">No music playing now</string>
     <string name="album_art">Album Art</string>
+    <string name="title_play_failure">Play Music Failed!</string>
+    <string name="alart_button_sidmiss">Dismiss</string>
+    <string name="expection_alart">Player Error</string>
+    <string name="continue_play">Automatically Play the Next Music When the Current Music Ends</string>
+    <string name="speed_play">Play Speed</string>
+    <string name="null_alart">No Music File Found</string>
 </resources>

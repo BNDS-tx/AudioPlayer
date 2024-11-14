@@ -1,35 +1,40 @@
 package com.bnds.audioplayer
 
+import android.app.Service
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Binder
+import android.os.IBinder
 import android.provider.MediaStore
 import android.util.Log
-import com.bnds.audioplayer.AudiobookPlayer.AudiobookPlayerState
 
-class Player private constructor(private val context: Context) {
+class Player : Service() {
 
-    companion object {
+    private val binder = PlayerBinder()
+    var mediaPlayer = AudiobookPlayer()
 
-        @Volatile
-        private var INSTANCE: Player? = null
-
-        fun getInstance(context: Context): Player {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Player(context.applicationContext).also { INSTANCE = it }
-            }
-        }
+    // Binder for binding with activities or other components
+    inner class PlayerBinder : Binder() {
+        fun getService(): com.bnds.audioplayer.Player = this@Player
     }
 
-    var mediaPlayer = AudiobookPlayer()
-    protected var state: buttonIconState = buttonIconState.NOT_PLAYING_NOT_READY
+    override fun onBind(intent: Intent?): IBinder {
+        return binder
+    }
 
-    enum class buttonIconState {
-        PLAYING,
-        NOT_PLAYING_READY,
-        NOT_PLAYING_NOT_READY
+    override fun onCreate() {
+        super.onCreate()
+        Log.d("PlayerService", "Service created")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer.stop() // Ensure mediaPlayer is stopped
+        Log.d("PlayerService", "Service destroyed")
     }
 
     private fun getFilePathFromUri(context: Context, uri: Uri): String? {
@@ -48,69 +53,75 @@ class Player private constructor(private val context: Context) {
         return filePath
     }
 
-    fun play(uri: Uri) {
+    fun play(uri: Uri, speed: Float) {
         try {
-            if (mediaPlayer.getState() != AudiobookPlayerState.STOPPED) {
+            if (mediaPlayer.getState() != AudiobookPlayer.AudiobookPlayerState.STOPPED) {
                 mediaPlayer.stop()
             }
             mediaPlayer.apply {
-                load(getFilePathFromUri(context, uri), 1F)
+                load(getFilePathFromUri(applicationContext, uri), speed)
             }
-            this.state = buttonIconState.PLAYING
         } catch (e: Exception) {
-            Log.e("Player", "Music Player Error: ${e.message}")
+            Log.e("PlayerService", "Error playing audio", e)
         }
     }
 
     fun pauseAndResume() {
         mediaPlayer.let {
-            if (mediaPlayer.getState() == AudiobookPlayerState.PLAYING) {
+            if (mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.PLAYING) {
                 it.pause()
-                this.state = buttonIconState.NOT_PLAYING_READY
-            } else if (mediaPlayer.getState() == AudiobookPlayerState.PAUSED) {
+            } else if (mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.PAUSED) {
                 it.play()
-                this.state = buttonIconState.PLAYING
             }
         }
     }
 
     fun stop() {
         mediaPlayer.let {
-            if (mediaPlayer.getState() != AudiobookPlayerState.STOPPED) {
+            if (mediaPlayer.getState() != AudiobookPlayer.AudiobookPlayerState.STOPPED) {
                 it.stop()
-                this.state = buttonIconState.NOT_PLAYING_NOT_READY
             }
         }
     }
 
-    fun getDuration() : Int {
+    fun getDuration(): Int {
         return mediaPlayer.mediaPlayer.duration
     }
 
-    fun getProgress() : Int {
+    fun getProgress(): Int {
         return mediaPlayer.getProgress()
     }
 
-    fun seekTo(progress: Int) {
-        mediaPlayer.skipTo(progress)
+    fun getFilePath(): String {
+        return mediaPlayer.getFilePath()
     }
 
-    fun getAlbumArt(fileUri: Uri): Bitmap? {
-        val filePath = getFilePathFromUri(context, fileUri)
+    fun seekTo(progress: Int) {
+        val oldState = mediaPlayer.getState()
+        mediaPlayer.skipTo(progress)
+        mediaPlayer.state = oldState
+    }
+
+    fun setSpeed(speed: Float) {
+        mediaPlayer.setPlaybackSpeed(speed)
+    }
+
+    fun getAlbumArt(): Bitmap? {
+        val filePath = getFilePath()
         val retriever = MediaMetadataRetriever()
-        try {
-            retriever.setDataSource(filePath) // 设置 MP3 文件路径
-            val embeddedPicture = retriever.embeddedPicture // 获取嵌入的专辑封面字节数组
-            return if (embeddedPicture != null) {
-                BitmapFactory.decodeByteArray(embeddedPicture, 0, embeddedPicture.size) // 转换为 Bitmap
+        return try {
+            retriever.setDataSource(filePath)
+            val embeddedPicture = retriever.embeddedPicture
+            if (embeddedPicture != null) {
+                BitmapFactory.decodeByteArray(embeddedPicture, 0, embeddedPicture.size)
             } else {
-                null // 如果没有嵌入的图片返回 null
+                null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            return null
+            Log.e("PlayerService", "Error retrieving album art", e)
+            null
         } finally {
-            retriever.release() // 释放资源
+            retriever.release()
         }
     }
 }

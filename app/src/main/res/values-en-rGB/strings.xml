@@ -8,4 +8,10 @@
     <string name="defualt_playing">No music playing now</string>
     <string name="title_activity_player">No Current Playing Music</string>
     <string name="album_art">Album Art</string>
+    <string name="title_play_failure">Play Music Failed!</string>
+    <string name="alart_button_sidmiss">Dismiss</string>
+    <string name="expection_alart">Player Error, Unable to Play Music File</string>
+    <string name="continue_play">Automatically Play the Next Music When the Current Music Ends</string>
+    <string name="speed_play">Play Speed</string>
+    <string name="null_alart">No Music File Found</string>
 </resources>

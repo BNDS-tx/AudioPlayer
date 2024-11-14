@@ -38,4 +38,8 @@
         <item name="android:textColor">@color/white</item> <!-- 自定义字体颜色 -->
         <item name="android:fontFamily">sans-serif</item> <!-- 其他属性可选 -->
     </style>
+
+    <style name="Widget.Material3.Button.Segmented">
+
+    </style>
 </resources>

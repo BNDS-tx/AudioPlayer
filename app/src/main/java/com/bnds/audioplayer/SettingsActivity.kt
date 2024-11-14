@@ -5,21 +5,20 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.WindowInsetsController
 import android.widget.Button
+import android.widget.Switch
 import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.preference.Preference
-import androidx.preference.PreferenceFragmentCompat
+import com.google.android.material.button.MaterialButtonToggleGroup
 
 private const val TITLE_TAG = "settingsActivityTitle"
 
 class SettingsActivity : AppCompatActivity() {
-    private var svar1: Int = 0
+    private var speedVal: Float = 1F
     private var position: Int = -1
-    private var alreadyPlayed: Boolean = false
+    private var isConnect: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,11 +35,11 @@ class SettingsActivity : AppCompatActivity() {
             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
         )
-        WindowCompat.setDecorFitsSystemWindows(window, true)
 
         var intent : Intent = getIntent()
-        if (intent != null && intent.hasExtra("Settings Values")) {
-            svar1 = intent.getIntExtra("Settings Values", 0)
+        if (intent != null && intent.hasExtra("Speed Values")) {
+            speedVal = intent.getFloatExtra("Speed Values", 1F)
+            isConnect = intent.getBooleanExtra("continuePlay", false)
             position = intent.getIntExtra("musicPosition", -1)
         }
 
@@ -49,16 +48,55 @@ class SettingsActivity : AppCompatActivity() {
             endActivity()
         }
 
+        val connectButton = findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.connectButton)
+        connectButton.isChecked = isConnect
+        connectButton.setOnCheckedChangeListener { buttonView, isChecked ->
+            if (isChecked) {
+                isConnect = true
+            } else {
+                isConnect = false
+            }
+        }
+
+        playBackSpeedControl()
+
         onBackPressedDispatcher.addCallback(this) {
             endActivity()
         }
     }
 
+    private fun playBackSpeedControl() {
+        val speedControl = findViewById<MaterialButtonToggleGroup>(R.id.speedControl)
+        val speedButton1 = findViewById<Button>(R.id.speedOption1)
+        val speedButton2 = findViewById<Button>(R.id.speedOption2)
+        val speedButton3 = findViewById<Button>(R.id.speedOption3)
+
+        when (speedVal) {
+            1F -> speedControl.check(speedButton1.id)
+            2F -> speedControl.check(speedButton2.id)
+            3F -> speedControl.check(speedButton3.id)
+        }
+
+        speedControl.addOnButtonCheckedListener { group, checkedId, isChecked ->
+            if (isChecked) {
+                when (checkedId) {
+                    speedButton1.id -> speedVal = 1F
+                    speedButton2.id -> speedVal = 2F
+                    speedButton3.id -> speedVal = 3F
+                }
+            }
+        }
+    }
+
+    private fun backgroundColorControl() {
+
+    }
+
     private fun endActivity() {
         val intent2 = Intent()
-        intent2.putExtra("result", svar1)
+        intent2.putExtra("Speed Values", speedVal)
+        intent2.putExtra("continuePlay", isConnect)
         intent2.putExtra("musicPosition", position)
-        intent2.putExtra("alreadyPlayed", alreadyPlayed)
         setResult(Activity.RESULT_OK, intent2)
         finish()
     }
