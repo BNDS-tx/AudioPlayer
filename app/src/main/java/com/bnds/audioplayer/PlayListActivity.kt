@@ -240,7 +240,7 @@ class PlayListActivity : AppCompatActivity() {
         }
         handler.postDelayed({ updateBar(progressBar, mediaPlayer.mediaPlayer.getProgress()) }, 500)
         if (progressBar.value >= progressBar.valueTo * 0.99) {
-            if (continuePlay) {
+            if (continuePlay && !checkPlaying()) {
                 mediaPlayer.stop()
                 musicPosition = (musicPosition + 1) % musicList.size
                 mediaPlayer.play(musicList[musicPosition].uri, speedVal)
