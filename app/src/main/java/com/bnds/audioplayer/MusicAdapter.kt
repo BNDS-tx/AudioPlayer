@@ -3,6 +3,7 @@ package com.bnds.audioplayer
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
@@ -14,6 +15,8 @@ class MusicAdapter(
     inner class MusicViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val title: TextView = itemView.findViewById(R.id.musicTitle)
         val artist: TextView = itemView.findViewById(R.id.musicArtist)
+        val bookmark: TextView = itemView.findViewById(R.id.musicBookmark)
+        val albumArt: ImageView = itemView.findViewById(R.id.albumArt)
 
         init {
             itemView.setOnClickListener {
@@ -34,6 +37,19 @@ class MusicAdapter(
         val music = musicList[position]
         holder.title.text = music.title
         holder.artist.text = music.artist
+//        holder.bookmark.text = music.bookmark
+        // 异步获取文件路径
+        FileHelper.getFilePathFromUri(holder.itemView.context, music.uri) { filePath ->
+            if (filePath != null) {
+                // 在获取文件路径后，异步获取专辑封面
+                FileHelper.getAlbumArt(filePath) { bitmap ->
+                    // 在主线程上更新 UI
+                    holder.albumArt.post {
+                        holder.albumArt.setImageBitmap(bitmap)
+                    }
+                }
+            }
+        }
     }
 
     override fun getItemCount(): Int = musicList.size

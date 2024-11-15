@@ -14,4 +14,8 @@
     <string name="continue_play">音乐结束时自动播放下一首</string>
     <string name="speed_play">播放速度</string>
     <string name="null_alart">未找到可播放音乐</string>
+    <string name="background_theme">播放界面背景颜色</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="theme_colorful">彩色</string>
 </resources>

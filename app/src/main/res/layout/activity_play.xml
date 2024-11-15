@@ -41,8 +41,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
+                android:layout_marginStart="10dp"
                 android:text="@string/title_activity_player"
-                android:textSize="20sp" />
+                android:textSize="20sp"
+                android:singleLine="true"
+                android:ellipsize="marquee"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:scrollHorizontally="true"  />
         </LinearLayout>
     </LinearLayout>
 
@@ -148,13 +155,19 @@
         app:layout_constraintDimensionRatio="1:1"
         android:layout_gravity="center"
         app:cardCornerRadius="25dp"
-        app:cardBackgroundColor="?attr/colorSecondary"
+        app:cardBackgroundColor="?attr/colorPrimaryContainer"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.4" >
+
+        <ImageView
+            android:layout_width="130dp"
+            android:layout_height="130dp"
+            app:srcCompat="@drawable/ic_music_note_24px"
+            android:layout_gravity="center"/>
 
         <ImageView
             android:id="@+id/albumArt"

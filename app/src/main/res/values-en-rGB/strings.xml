@@ -14,4 +14,8 @@
     <string name="continue_play">Automatically Play the Next Music When the Current Music Ends</string>
     <string name="speed_play">Play Speed</string>
     <string name="null_alart">No Music File Found</string>
+    <string name="background_theme">Background Color of Player View</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_colorful">Colorful</string>
 </resources>

@@ -68,7 +68,7 @@
             android:id="@+id/jumpToPlayButton"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:backgroundTint="?attr/colorPrimaryVariant"
+            app:backgroundTint="?attr/colorTertiaryContainer"
             android:background="@drawable/button_page"
             android:gravity="center_horizontal|top"
             android:padding="10dp"

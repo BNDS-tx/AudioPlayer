@@ -133,7 +133,7 @@
                     android:layout_height="wrap_content"
                     android:text="1X"
                     style="@style/Widget.Material3.Button.Segmented"
-                    android:backgroundTint="@drawable/segmentede_button_color"/>
+                    android:backgroundTint="@drawable/segmented_button_color"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/speedOption2"
@@ -141,7 +141,7 @@
                     android:layout_height="wrap_content"
                     android:text="2X"
                     style="@style/Widget.Material3.Button.Segmented"
-                    android:backgroundTint="@drawable/segmentede_button_color"/>
+                    android:backgroundTint="@drawable/segmented_button_color"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/speedOption3"
@@ -149,7 +149,7 @@
                     android:layout_height="wrap_content"
                     android:text="3X"
                     style="@style/Widget.Material3.Button.Segmented"
-                    android:backgroundTint="@drawable/segmentede_button_color"/>
+                    android:backgroundTint="@drawable/segmented_button_color"/>
         </com.google.android.material.button.MaterialButtonToggleGroup>
         </LinearLayout>
         <TextView
@@ -160,7 +160,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
         android:orientation="horizontal"
         android:gravity="center_horizontal">
@@ -174,49 +174,62 @@
             android:layout_width="0dp"
             android:layout_weight="0.85"
             android:layout_height="match_parent"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:gravity="center"
-            android:background="@drawable/card_background_1">
+            android:background="@drawable/card_background_1"
+            android:padding="0dp">
 
             <com.google.android.material.textview.MaterialTextView
-                android:layout_width="0dp"
-                android:layout_weight="0.85"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:text="@string/speed_play"
-                android:layout_marginEnd="5dp"
-                android:layout_marginStart="5dp"/>
-
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:singleSelection="true"
-                android:padding="1dp">
+                android:gravity="center_vertical"
+                android:text="@string/background_theme"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="15dp"
+                android:layout_marginStart="15dp"/>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/colorOption1"
-                    android:layout_width="70dp"
-                    android:layout_height="wrap_content"
-                    android:text="1X"
-                    style="@style/Widget.Material3.Button.Segmented"
-                    android:backgroundTint="@drawable/segmentede_button_color"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/colorOption2"
-                    android:layout_width="70dp"
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/colorControl"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="2X"
-                    style="@style/Widget.Material3.Button.Segmented"
-                    android:backgroundTint="@drawable/segmentede_button_color"/>
+                    app:singleSelection="true"
+                    android:gravity="center"
+                    android:padding="11dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/colorOption3"
-                    android:layout_width="70dp"
-                    android:layout_height="wrap_content"
-                    android:text="3X"
-                    style="@style/Widget.Material3.Button.Segmented"
-                    android:backgroundTint="@drawable/segmentede_button_color"/>
-            </com.google.android.material.button.MaterialButtonToggleGroup>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/colorOption1"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/theme_light"
+                        style="@style/Widget.Material3.Button.Segmented"
+                        android:backgroundTint="@drawable/segmented_button_color"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/colorOption2"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/theme_colorful"
+                        style="@style/Widget.Material3.Button.Segmented"
+                        android:backgroundTint="@drawable/segmented_button_color"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/colorOption3"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/theme_dark"
+                        style="@style/Widget.Material3.Button.Segmented"
+                        android:backgroundTint="@drawable/segmented_button_color"/>
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+            </LinearLayout>
         </LinearLayout>
         <TextView
             android:layout_width="0dp"

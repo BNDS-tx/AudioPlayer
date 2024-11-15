@@ -27,6 +27,7 @@ class PlayListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlayListBinding
     private var musicList: List<Music> = emptyList()
     private var speedVal: Float = 1F
+    private var colorVal: Int = 1
     private var continuePlay: Boolean = false
     private var musicPosition: Int = -1
     private val handler = Handler(Looper.getMainLooper())
@@ -67,12 +68,11 @@ class PlayListActivity : AppCompatActivity() {
         playButton = findViewById(R.id.playButton)
         progressBar = findViewById(R.id.progressBar)
 
-        // 设置状态栏的文本颜色为浅色或深色
         val insetsController = window.insetsController
         insetsController?.setSystemBarsAppearance(
             0,
             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-        ) // 根据你的设计需求调整
+        )
 
         setTitle(R.string.title_activity_play_list)
 
@@ -88,11 +88,11 @@ class PlayListActivity : AppCompatActivity() {
         ) { result ->
             if (result.resultCode == Activity.RESULT_OK && result.data != null) {
                 val speedSetting = result.data!!.getFloatExtra("Speed Values", 1F)
+                colorVal = result.data!!.getIntExtra("Color Values", 1)
                 continuePlay = result.data!!.getBooleanExtra("continuePlay", false)
-                val currentPosition = result.data!!.getIntExtra("musicPosition", 0)
+                musicPosition = result.data!!.getIntExtra("musicPosition", 0)
                 checkSpeed(speedVal, speedSetting)
                 speedVal = speedSetting
-                musicPosition = currentPosition
                 refreshMusicList()
                 display(toPlayButton)
                 setIcon()
@@ -121,6 +121,7 @@ class PlayListActivity : AppCompatActivity() {
             val intent : Intent = Intent(this, PlayActivity::class.java).apply(
                 fun Intent.() {
                     putExtra("Speed Values", speedVal)
+                    putExtra("Color Values", colorVal)
                     putExtra("continuePlay", continuePlay)
                     putExtra("musicPosition", musicList.indexOf(music))
                     putExtra("musicTitleList", ArrayList(titleList))
@@ -185,6 +186,7 @@ class PlayListActivity : AppCompatActivity() {
         val intent: Intent = Intent(this, SettingsActivity::class.java).apply(
             fun Intent.() {
                 putExtra("Speed Values", speedVal)
+                putExtra("Color Values", colorVal)
                 putExtra("continuePlay", continuePlay)
                 putExtra("musicPosition", musicPosition)
             }
@@ -205,6 +207,7 @@ class PlayListActivity : AppCompatActivity() {
         val intent = Intent(this, PlayActivity::class.java).apply(
             fun Intent.() {
                 putExtra("Speed Values", speedVal)
+                putExtra("Color Values", colorVal)
                 putExtra("continuePlay", continuePlay)
                 putExtra("musicPosition", position)
                 putExtra("musicTitleList", ArrayList(titleList))
