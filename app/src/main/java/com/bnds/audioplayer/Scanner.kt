@@ -7,7 +7,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
 
-data class Music(val title: String, val artist: String, val uri: Uri)
+data class Music(val title: String, val artist: String, val uri: Uri, val id: Long)
 
 class Scanner(private val context: Context) {
 
@@ -57,7 +57,7 @@ class Scanner(private val context: Context) {
                 val musicUri = Uri.withAppendedPath(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id.toString())
 
                 // 添加到结果列表
-                musicFiles.add(Music(title, artist, musicUri))
+                musicFiles.add(Music(title, artist, musicUri, id))
             }
         } ?: Log.e("Scanner", "查询音乐文件失败")
 

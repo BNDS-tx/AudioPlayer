@@ -2,11 +2,13 @@ package com.bnds.audioplayer
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.WindowInsetsController
 import android.widget.Button
 import android.widget.Switch
 import androidx.activity.addCallback
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -19,6 +21,7 @@ class SettingsActivity : AppCompatActivity() {
     private var colorVal: Int = 1
     private var position: Int = -1
     private var isConnect: Boolean = false
+    private var bookMarkerBundle: Bundle = Bundle()
 
     private lateinit var backButton: MaterialButton
     private lateinit var connectButton: com.google.android.material.materialswitch.MaterialSwitch
@@ -34,6 +37,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContentView(R.layout.settings_activity)
 
         backButton = findViewById(R.id.backButton)
@@ -53,18 +57,13 @@ class SettingsActivity : AppCompatActivity() {
             insets
         }
 
-        val insetsController = window.insetsController
-        insetsController?.setSystemBarsAppearance(
-            WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
-            WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-        )
-
         var intent : Intent = getIntent()
         if (intent != null && intent.hasExtra("Speed Values")) {
             speedVal = intent.getFloatExtra("Speed Values", 1F)
             colorVal = intent.getIntExtra("Color Values", 1)
             isConnect = intent.getBooleanExtra("continuePlay", false)
             position = intent.getIntExtra("musicPosition", -1)
+            bookMarkerBundle = intent.getBundleExtra("bookMarker")!!
         }
 
         backButton.setOnClickListener() {
@@ -107,18 +106,32 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun backgroundColorControl() {
+        val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
         when (colorVal) {
-            1 -> colorControl.check(colorButton1.id)
+            1 -> {
+                if (isDarkMode) { colorControl.check(colorButton3.id) }
+                else { colorControl.check(colorButton1.id) }
+            }
             2 -> colorControl.check(colorButton2.id)
-            3 -> colorControl.check(colorButton3.id)
+            3 -> {
+                if (isDarkMode) { colorControl.check(colorButton1.id) }
+                else { colorControl.check(colorButton3.id) }
+            }
         }
 
         colorControl.addOnButtonCheckedListener { group, checkedId, isChecked ->
             if (isChecked) {
                 when (checkedId) {
-                    colorButton1.id -> colorVal = 1
+                    colorButton1.id -> {
+                        if (!isDarkMode) { colorVal = 1 }
+                        else { colorVal = 3 }
+                    }
                     colorButton2.id -> colorVal = 2
-                    colorButton3.id -> colorVal = 3
+                    colorButton3.id -> {
+                        if (!isDarkMode) { colorVal = 3 }
+                        else { colorVal = 1 }
+                    }
                 }
             }
         }
@@ -130,7 +143,13 @@ class SettingsActivity : AppCompatActivity() {
         intent2.putExtra("Color Values", colorVal)
         intent2.putExtra("continuePlay", isConnect)
         intent2.putExtra("musicPosition", position)
+        intent2.putExtra("bookMarker", bookMarkerBundle)
         setResult(Activity.RESULT_OK, intent2)
         finish()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        endActivity()
     }
 }

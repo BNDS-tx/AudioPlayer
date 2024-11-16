@@ -39,7 +39,7 @@ class Player : Service() {
 
     private fun getFilePathFromUri(context: Context, uri: Uri): String? {
         var filePath: String? = null
-        if ("content".equals(uri.scheme, ignoreCase = true)) {
+        if ("content".equals(uri.scheme, true)) {
             val projection = arrayOf(MediaStore.Audio.Media.DATA)
             context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
@@ -47,7 +47,7 @@ class Player : Service() {
                     filePath = cursor.getString(columnIndex)
                 }
             }
-        } else if ("file".equals(uri.scheme, ignoreCase = true)) {
+        } else if ("file".equals(uri.scheme, true)) {
             filePath = uri.path
         }
         return filePath
@@ -85,6 +85,9 @@ class Player : Service() {
     }
 
     fun getDuration(): Int {
+        if (mediaPlayer.mediaPlayer == null) {
+            return 1
+        }
         return mediaPlayer.mediaPlayer.duration
     }
 
@@ -123,5 +126,15 @@ class Player : Service() {
         } finally {
             retriever.release()
         }
+    }
+
+    fun complete(): Boolean {
+        if (getProgress() < getDuration()) {
+            if (getDuration() - getProgress() < 750) {
+                return true
+            }
+            return false
+        }
+        return true
     }
 }

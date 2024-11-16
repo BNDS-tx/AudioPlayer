@@ -11,6 +11,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.view.WindowInsetsController
 import android.widget.Button
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +19,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.color.DynamicColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.slider.Slider
 
@@ -30,6 +33,7 @@ class PlayListActivity : AppCompatActivity() {
     private var colorVal: Int = 1
     private var continuePlay: Boolean = false
     private var musicPosition: Int = -1
+    private var bookMarker: MutableMap<Long, Int> = mutableMapOf()
     private val handler = Handler(Looper.getMainLooper())
 
     private lateinit var mediaPlayer: Player
@@ -57,7 +61,7 @@ class PlayListActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        enableEdgeToEdge()
         binding = ActivityPlayListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -78,10 +82,7 @@ class PlayListActivity : AppCompatActivity() {
 
         val intent = Intent(this, Player::class.java)
         startService(intent)
-
-        if (!isBound) {
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
-        }
+        bindService(intent)
 
         activityResultLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
@@ -91,10 +92,17 @@ class PlayListActivity : AppCompatActivity() {
                 colorVal = result.data!!.getIntExtra("Color Values", 1)
                 continuePlay = result.data!!.getBooleanExtra("continuePlay", false)
                 musicPosition = result.data!!.getIntExtra("musicPosition", 0)
+                val bookMarkerBundle = result.data!!.getBundleExtra("bookMarker")!!
                 checkSpeed(speedVal, speedSetting)
                 speedVal = speedSetting
+                bookMarkerBundle.keySet()?.forEach { key ->
+                    val id = key.toLongOrNull() // 将键转换回 Long
+                    if (id != null) {
+                        bookMarker[id] = bookMarkerBundle.getInt(key)
+                    }
+                }
                 refreshMusicList()
-                display(toPlayButton)
+                setButtonText(toPlayButton)
                 setIcon()
             }
         }
@@ -110,36 +118,7 @@ class PlayListActivity : AppCompatActivity() {
         setUsability()
     }
 
-    private fun refreshMusicList() {
-        val musicScanner = Scanner(this)
-        musicList = musicScanner.scanMusicFiles()
-        val titleList = musicList.map { it.title }
-        val artistList = musicList.map { it.artist }
-        val uriList = musicList.map { it.uri.toString() }
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = MusicAdapter(musicList) { music ->
-            val intent : Intent = Intent(this, PlayActivity::class.java).apply(
-                fun Intent.() {
-                    putExtra("Speed Values", speedVal)
-                    putExtra("Color Values", colorVal)
-                    putExtra("continuePlay", continuePlay)
-                    putExtra("musicPosition", musicList.indexOf(music))
-                    putExtra("musicTitleList", ArrayList(titleList))
-                    putExtra("musicArtistList", ArrayList(artistList))
-                    putExtra("musicUriList", ArrayList(uriList))
-                    putExtra("newSong", true)
-                }
-            )
-            if (isBound) {
-                unbindService(connection)
-                isBound = false
-            }
-            activityResultLauncher.launch(intent)
-        }
-    }
-
     private fun handleMusicPlayback() {
-        setIcon()
         settingsButton.setOnClickListener {
             openSettingsActivity()
         }
@@ -153,8 +132,7 @@ class PlayListActivity : AppCompatActivity() {
                 mediaPlayer.play(musicList[0].uri, speedVal)
                 mediaPlayer.pauseAndResume()
             }
-            progressBar.valueTo = mediaPlayer.getDuration().toFloat()
-            updateBar(progressBar, mediaPlayer.getProgress())
+            updateBar(progressBar, mediaPlayer.getProgress(), mediaPlayer.getDuration())
             progressBar.addOnChangeListener { slider, value, fromUser ->
                 if (fromUser) {
                     val newProgress = value.toInt()
@@ -163,17 +141,101 @@ class PlayListActivity : AppCompatActivity() {
             }
         }
 
-        display(toPlayButton)
+        setButtonText(toPlayButton)
         toPlayButton.setOnClickListener {
             openPlayActivity(musicPosition)
         }
 
+        checkPlayProgress()
         setIcon()
+    }
+
+    private fun bindService(thisIntent: Intent) {
+        if (!isBound) {
+            bindService(thisIntent, connection, Context.BIND_AUTO_CREATE)
+        }
+    }
+
+    private fun refreshMusicList() {
+        val musicScanner = Scanner(this)
+        musicList = musicScanner.scanMusicFiles()
+        val titleList = musicList.map { it.title }
+        val artistList = musicList.map { it.artist }
+        val uriList = musicList.map { it.uri.toString() }
+        val idList = musicList.map { it.id }
+        val bookMarkerBundle = Bundle()
+        for ((id, marker) in bookMarker) {
+            bookMarkerBundle.putInt(id.toString(), marker)
+        }
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = MusicAdapter(musicList, bookMarker) { music ->
+            val intent : Intent = Intent(this, PlayActivity::class.java).apply(
+                fun Intent.() {
+                    putExtra("Speed Values", speedVal)
+                    putExtra("Color Values", colorVal)
+                    putExtra("continuePlay", continuePlay)
+                    putExtra("musicPosition", musicList.indexOf(music))
+                    putExtra("bookMarker", bookMarkerBundle)
+                    putExtra("musicTitleList", ArrayList(titleList))
+                    putExtra("musicArtistList", ArrayList(artistList))
+                    putExtra("musicUriList", ArrayList(uriList))
+                    putExtra("musicId", idList.toLongArray())
+                    putExtra("newSong", true)
+                }
+            )
+            if (isBound) {
+                unbindService(connection)
+                isBound = false
+            }
+            handler.removeCallbacksAndMessages(null)
+            activityResultLauncher.launch(intent)
+        }
+    }
+
+    private fun checkBookmark(id: Long) : Boolean {
+        if (bookMarker.isEmpty()) {
+            return false
+        }
+        if (!bookMarker.containsKey(id)) {
+            return false
+        }
+        if (bookMarker[id] == 0) {
+            return false
+        }
+        return true
+    }
+
+    private fun checkMediaError() : Boolean {
+        return mediaPlayer.mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.ERROR
+    }
+
+    private fun checkMediaPlaying() : Boolean {
+        return mediaPlayer.mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.PLAYING
+    }
+
+    private fun checkMediaStopped() : Boolean {
+        return mediaPlayer.mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.STOPPED
+    }
+
+    private fun checkPlayProgress() {
+        if ((checkMediaStopped() || mediaPlayer.complete()) &&
+            musicPosition != -1
+        ) {
+            handler.postDelayed({
+                if (!continuePlay) {
+                    mediaPlayer.stop()
+                    setIcon()
+                } else {
+                    jumpToNextSong()
+                }
+            }, 750 / speedVal.toLong())
+        }
+        else handler.postDelayed({ checkPlayProgress() }, 100)
     }
 
     private fun checkSpeed(oldSpeed: Float, newSpeed: Float) {
         if (oldSpeed != newSpeed) {
-            if (checkPlaying()) {
+            if (checkMediaPlaying()) {
                 mediaPlayer.setSpeed(newSpeed)
             } else {
                 mediaPlayer.setSpeed(newSpeed)
@@ -182,20 +244,15 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
-    private fun openSettingsActivity() {
-        val intent: Intent = Intent(this, SettingsActivity::class.java).apply(
-            fun Intent.() {
-                putExtra("Speed Values", speedVal)
-                putExtra("Color Values", colorVal)
-                putExtra("continuePlay", continuePlay)
-                putExtra("musicPosition", musicPosition)
-            }
-        )
-        if (isBound) {
-            unbindService(connection)
-            isBound = false
+    private fun jumpToNextSong() {
+        musicPosition = (musicPosition + 1) % musicList.size
+        if (!checkBookmark(musicList[musicPosition].id)) {
+            tryPlay(musicPosition)
+        } else {
+            popupMarker()
         }
-        activityResultLauncher.launch(intent)
+        handler.post({ checkPlayProgress() } )
+        setButtonText(toPlayButton)
     }
 
     private fun openPlayActivity(position: Int) {
@@ -204,15 +261,22 @@ class PlayListActivity : AppCompatActivity() {
         val titleList = musicList.map { it.title }
         val artistList = musicList.map { it.artist }
         val uriList = musicList.map { it.uri.toString() }
+        val idList = musicList.map { it.id }
+        val bookMarkerBundle = Bundle()
+        for ((id, marker) in bookMarker) {
+            bookMarkerBundle.putInt(id.toString(), marker)
+        }
         val intent = Intent(this, PlayActivity::class.java).apply(
             fun Intent.() {
                 putExtra("Speed Values", speedVal)
                 putExtra("Color Values", colorVal)
                 putExtra("continuePlay", continuePlay)
                 putExtra("musicPosition", position)
+                putExtra("bookMarker", bookMarkerBundle)
                 putExtra("musicTitleList", ArrayList(titleList))
                 putExtra("musicArtistList", ArrayList(artistList))
                 putExtra("musicUriList", ArrayList(uriList))
+                putExtra("musicId", idList.toLongArray())
             }
         )
         if (isBound) {
@@ -220,48 +284,99 @@ class PlayListActivity : AppCompatActivity() {
             isBound = false
         }
         setUsability()
+        handler.removeCallbacksAndMessages(null)
+        activityResultLauncher.launch(intent)
+    }
+
+    private fun openSettingsActivity() {
+        val intent: Intent = Intent(this, SettingsActivity::class.java).apply(
+            fun Intent.() {
+                val bookMarkerBundle = Bundle()
+                for ((id, marker) in bookMarker) {
+                    bookMarkerBundle.putInt(id.toString(), marker)
+                }
+                putExtra("Speed Values", speedVal)
+                putExtra("Color Values", colorVal)
+                putExtra("continuePlay", continuePlay)
+                putExtra("musicPosition", musicPosition)
+                putExtra("bookMarker", bookMarkerBundle)
+            }
+        )
+        if (isBound) {
+            unbindService(connection)
+            isBound = false
+        }
         activityResultLauncher.launch(intent)
     }
 
     private fun playController(mediaPlayer: Player) {
         setIcon()
         if (musicPosition != -1) {
-            mediaPlayer.pauseAndResume()
+            if (checkMediaStopped()) {
+                mediaPlayer.play(musicList[musicPosition].uri, speedVal)
+                handler.post({ checkPlayProgress() } )
+            } else {
+                mediaPlayer.pauseAndResume()
+            }
         } else {
-            mediaPlayer.play(musicList[0].uri, speedVal)
+            tryPlay(0)
             musicPosition = 0
-            display(toPlayButton)
+            setButtonText(toPlayButton)
         }
         setIcon()
     }
 
-    private fun updateBar(progressBar: Slider, progress: Int) {
-        progressBar.value = progress.toFloat()
-        progressBar.valueTo = mediaPlayer.getDuration().toFloat()
-        if (checkError() || checkNotGreater()) {
-            progressBar.valueTo = progressBar.value + 1
+    private fun popUpAlert() {
+        val builder = MaterialAlertDialogBuilder(this)
+        builder.setTitle(R.string.title_play_failure)
+        builder.setMessage(R.string.expection_alart)
+        builder.setPositiveButton(R.string.alart_button_sidmiss) { dialog, _ ->
+            dialog.dismiss()
         }
-        handler.postDelayed({ updateBar(progressBar, mediaPlayer.mediaPlayer.getProgress()) }, 500)
-        if (progressBar.value >= progressBar.valueTo * 0.99) {
-            if (continuePlay && !checkPlaying()) {
-                mediaPlayer.stop()
-                musicPosition = (musicPosition + 1) % musicList.size
-                mediaPlayer.play(musicList[musicPosition].uri, speedVal)
-                display(toPlayButton)
-            }
+        builder.setNegativeButton(R.string.jump_back) { dialog, _ ->
+            dialog.dismiss()
+        }
+
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun popupMarker() {
+        val builder = MaterialAlertDialogBuilder(this)
+        builder.setTitle(R.string.title_play_bookmark)
+        tryPlay(musicPosition)
+        mediaPlayer.pauseAndResume()
+        setIcon()
+        builder.setMessage(R.string.bookmark_nottification)
+        builder.setPositiveButton(R.string.bookmark_yes) { dialog, _ ->
+            tryPlay(musicPosition)
+            mediaPlayer.seekTo(bookMarker[musicList[musicPosition].id]!!)
+            setIcon()
+            dialog.dismiss()
+        }
+        builder.setNegativeButton(R.string.bookmark_no) { dialog, _ ->
+            tryPlay(musicPosition)
+            setIcon()
+            dialog.dismiss()
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun setButtonText(button: Button) {
+        if (musicPosition != -1) {
+            button.text = musicList[musicPosition].title
+        } else {
+            button.text = getString(R.string.defualt_playing)
         }
     }
 
-    private fun checkError() : Boolean {
-        return mediaPlayer.mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.ERROR
-    }
-
-    private fun checkNotGreater() : Boolean {
-        return mediaPlayer.getProgress() > mediaPlayer.getDuration()
-    }
-
-    private fun checkPlaying() : Boolean {
-        return mediaPlayer.mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.PLAYING
+    private fun setIcon() {
+        if (checkMediaPlaying()) {
+            playButton.setIconResource(R.drawable.ic_pause_circle_24px)
+        } else {
+            playButton.setIconResource(R.drawable.ic_play_arrow_24px)
+        }
     }
 
     private fun setUsability() {
@@ -274,20 +389,36 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
-    private fun display(button: Button) {
-        if (musicPosition != -1) {
-            button.text = musicList[musicPosition].title
-        } else {
-            button.text = getString(R.string.defualt_playing)
+    private fun tryPlay(position: Int) {
+        mediaPlayer.stop()
+        setIcon()
+        try {
+            mediaPlayer.play(musicList[position].uri, speedVal)
+        }catch  (e: Exception) {
+            e.printStackTrace()
+            popUpAlert()
         }
+        if (checkMediaError()) {
+            popUpAlert()
+        }
+        setIcon()
+        handler.post({ checkPlayProgress() } )
     }
 
-    private fun setIcon() {
-        if (checkPlaying()) {
-            playButton.setIconResource(R.drawable.ic_pause_circle_24px)
-        } else {
-            playButton.setIconResource(R.drawable.ic_play_arrow_24px)
+    private fun updateBar(progressBar: Slider, progress: Int, duration: Int) {
+        if (progress <= duration && !checkMediaError()) {
+            progressBar.value = progress.toFloat()
+            progressBar.valueTo = duration.toFloat()
         }
+        handler.postDelayed({ updateBar(
+            progressBar, mediaPlayer.getProgress(), mediaPlayer.getDuration()
+        ) }, 100)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val intent = Intent(this, Player::class.java)
+        bindService(intent)
     }
 
     override fun onDestroy() {
@@ -298,5 +429,6 @@ class PlayListActivity : AppCompatActivity() {
         }
         val intent = Intent(this, Player::class.java)
         stopService(intent)
+        handler.removeCallbacksAndMessages(null)
     }
 }

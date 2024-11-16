@@ -60,8 +60,7 @@
                 android:layout_weight="0.1"
                 android:layout_height="23dp"
                 android:gravity="center"
-                android:layout_marginStart="10dp"
-                android:text="Bookmark" />
+                android:layout_marginStart="10dp" />
         </LinearLayout>
     </LinearLayout>
 

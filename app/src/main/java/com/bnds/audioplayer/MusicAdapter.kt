@@ -6,9 +6,11 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import java.util.Locale
 
 class MusicAdapter(
     private var musicList: List<Music>,
+    private var bookMarker: MutableMap<Long, Int>,
     private val onItemClick: (Music) -> Unit
 ) : RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
 
@@ -37,7 +39,13 @@ class MusicAdapter(
         val music = musicList[position]
         holder.title.text = music.title
         holder.artist.text = music.artist
-//        holder.bookmark.text = music.bookmark
+        if (isNeedBookmark(music.id)) {
+            holder.bookmark.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                0, 0, R.drawable.ic_bookmark_added_24px, 0
+            )
+            holder.bookmark.text = intToTime(bookMarker[music.id]!!)
+
+        }
         // 异步获取文件路径
         FileHelper.getFilePathFromUri(holder.itemView.context, music.uri) { filePath ->
             if (filePath != null) {
@@ -50,6 +58,26 @@ class MusicAdapter(
                 }
             }
         }
+    }
+
+    private fun isNeedBookmark(musicId: Long): Boolean {
+        if (bookMarker.isEmpty()) {
+            return false
+        }
+        if (!bookMarker.containsKey(musicId)) {
+            return false
+        }
+        if (bookMarker[musicId] == 0) {
+            return false
+        }
+        return true
+    }
+
+    private fun intToTime(time: Int): String {
+        val seconds = time / 1000
+        val minutes = seconds / 60
+        val remainingSeconds = seconds % 60
+        return String.format(Locale.getDefault(), "%02d:%02d", minutes, remainingSeconds)
     }
 
     override fun getItemCount(): Int = musicList.size

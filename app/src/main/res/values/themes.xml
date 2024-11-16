@@ -1,22 +1,18 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.AudioPlayer" parent="Theme.Material3.DayNight.NoActionBar">">
+    <style name="Theme.AudioPlayer" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/color_949BF6</item>
-        <item name="colorTertiaryContainer">@color/purple_700</item>
+<!--        <item name="colorPrimary">@color/color_949BF6</item>-->
+<!--        <item name="colorTertiaryContainer">@color/purple_700</item>-->
         <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimary</item>
+<!--        <item name="android:statusBarColor">?attr/colorPrimary</item>-->
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="Theme.AudioPlayer.NoActionBar">
+    <style name="Theme.AudioPlayer.NoActionBar" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="windowActionBar">true</item>
         <item name="windowNoTitle">true</item>
     </style>
-
-    <style name="Theme.AudioPlayer.AppBarOverlay" parent="ThemeOverlay.Material3.Dark.ActionBar" />
-
-    <style name="Theme.AudioPlayer.PopupOverlay" parent="ThemeOverlay.Material3.Light" />
 
     <style name="Theme.AudioPlayer.MD3Button" parent="ThemeOverlay.Material3.Button" />
 

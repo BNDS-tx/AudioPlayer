@@ -18,4 +18,8 @@
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
     <string name="theme_colorful">彩色</string>
+    <string name="title_play_bookmark">该音乐被设置书签</string>
+    <string name="bookmark_nottification">你在此文件设置了书签，请问要从该处继续播放吗？</string>
+    <string name="bookmark_yes">是的</string>
+    <string name="bookmark_no">不，从头开始</string>
 </resources>

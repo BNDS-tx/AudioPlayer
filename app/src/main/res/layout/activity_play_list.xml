@@ -11,8 +11,7 @@
         android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="200dp"
-        android:fitsSystemWindows="true"
-        android:theme="@style/Theme.AudioPlayer.AppBarOverlay">
+        android:fitsSystemWindows="true">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:id="@+id/toolbar_layout"
@@ -25,12 +24,10 @@
             app:expandedTitleMarginBottom="30dp"
             app:expandedTitleMarginEnd="20dp"
             app:expandedTitleMarginStart="20dp"
-            app:expandedTitleTextAppearance="@style/ExpandedTitleTextAppearance"
-            app:collapsedTitleTextAppearance="@style/CollapsedTitleTextAppearance"
-            app:expandedTitleTextColor="@color/white"
-            app:collapsedTitleTextColor="@color/white"
+            app:expandedTitleTextColor="?attr/colorOnPrimary"
+            app:collapsedTitleTextColor="?attr/colorOnPrimary"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:toolbarId="@+id/toolbar">
+            app:toolbarId="@+id/toolbar" >
 
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar"
@@ -39,8 +36,7 @@
                 android:background="?attr/colorPrimary"
                 android:minHeight="?attr/actionBarSize"
                 android:theme="?attr/actionBarTheme"
-                app:layout_collapseMode="pin"
-                app:popupTheme="@style/Theme.AudioPlayer.PopupOverlay" />
+                app:layout_collapseMode="pin" />
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
@@ -68,7 +64,8 @@
             android:id="@+id/jumpToPlayButton"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:backgroundTint="?attr/colorTertiaryContainer"
+            app:backgroundTint="?attr/colorPrimaryContainer"
+            android:textColor="?attr/colorOnPrimaryContainer"
             android:background="@drawable/button_page"
             android:gravity="center_horizontal|top"
             android:padding="10dp"
