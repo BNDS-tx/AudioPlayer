@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="menu_settings">Settings</string>
-    <string name="title_activity_play_list">Album List</string>
+    <string name="title_activity_play_list">File List</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_settings">Settings</string>
     <string name="jump_back">Back</string>
-    <string name="defualt_playing">No music playing now</string>
-    <string name="title_activity_player">No Current Playing Music</string>
+    <string name="defualt_playing">No file playing now</string>
+    <string name="title_activity_player">No Current Playing File</string>
     <string name="album_art">Album Art</string>
-    <string name="title_play_failure">Play Music Failed!</string>
+    <string name="title_play_failure">Play File Failed!</string>
     <string name="alart_button_sidmiss">Dismiss</string>
-    <string name="expection_alart">Player Error, Unable to Play Music File</string>
-    <string name="continue_play">Automatically Play the Next Music When the Current Music Ends</string>
+    <string name="expection_alart">Player Error, Unable to Play This File</string>
+    <string name="continue_play">Automatically Play the Next File When the Current Ends</string>
     <string name="speed_play">Play Speed</string>
-    <string name="null_alart">No Music File Found</string>
+    <string name="null_alart">No Supported File Found</string>
     <string name="background_theme">Background Color of Player View</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
@@ -22,4 +22,5 @@
     <string name="bookmark_nottification">You have set a bookmark in this file, do you want to play from it?</string>
     <string name="bookmark_yes">Yes</string>
     <string name="bookmark_no">No, Play from the start</string>
+    <string name="playback_channel">Playbcak Channel</string>
 </resources>

@@ -11,7 +11,8 @@
         android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="200dp"
-        android:fitsSystemWindows="true">
+        android:fitsSystemWindows="true"
+        android:background="?attr/colorSurface">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:id="@+id/toolbar_layout"
@@ -20,12 +21,14 @@
             android:layout_height="150dp"
             android:fitsSystemWindows="true"
             android:title="@string/title_activity_play_list"
-            app:contentScrim="?attr/colorPrimary"
+            app:contentScrim="?attr/colorPrimaryContainer"
+            android:background="?attr/colorPrimaryContainer"
             app:expandedTitleMarginBottom="30dp"
             app:expandedTitleMarginEnd="20dp"
             app:expandedTitleMarginStart="20dp"
-            app:expandedTitleTextColor="?attr/colorOnPrimary"
-            app:collapsedTitleTextColor="?attr/colorOnPrimary"
+            app:expandedTitleTextColor="?attr/colorOnPrimaryContainer"
+            app:expandedTitleTextAppearance="@style/ExpandedTitleTextAppearance"
+            app:collapsedTitleTextColor="?attr/colorOnPrimaryContainer"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
             app:toolbarId="@+id/toolbar" >
 
@@ -33,7 +36,7 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="?attr/colorPrimary"
+                android:background="?attr/colorPrimaryContainer"
                 android:minHeight="?attr/actionBarSize"
                 android:theme="?attr/actionBarTheme"
                 app:layout_collapseMode="pin" />
@@ -50,7 +53,9 @@
         android:layout_marginEnd="@dimen/fab_margin"
         app:layout_anchor="@id/app_bar"
         app:layout_anchorGravity="bottom|end"
-        app:srcCompat="@drawable/sync" />
+        app:srcCompat="@drawable/ic_refresh_24px"
+        android:backgroundTint="?attr/colorPrimary"
+        app:tint="?attr/colorOnPrimary"/>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -71,6 +76,8 @@
             android:padding="10dp"
             android:paddingStart="30dp"
             android:paddingEnd="30dp"
+            android:ellipsize="end"
+            android:singleLine="true"
             android:layout_gravity="center_horizontal|bottom" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 

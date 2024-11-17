@@ -4,43 +4,34 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.content.res.ColorStateList
-import android.content.res.Configuration
-import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.util.TypedValue
 import android.view.View
-import android.view.WindowInsetsController
 import android.widget.ImageView
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.palette.graphics.Palette
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.Slider
 import com.google.android.material.textview.MaterialTextView
 import java.util.Locale
 
-class PlayActivity : AppCompatActivity() {
+open class PlayActivity : AppCompatActivity() {
     private var speedVal: Float = 1F
     private var colorVal: Int = 1
     private var continuePlay: Boolean = false
-    private lateinit var musicPlayer: Player
-    private var musicPosition: Int = -1
-    private var bookMarker: MutableMap<Long, Int> = mutableMapOf()
-    private lateinit var titleList: ArrayList<String>
-    private lateinit var artistList: ArrayList<String>
-    private lateinit var uriList: ArrayList<Uri>
-    private lateinit var idList: ArrayList<Long>
+    lateinit var musicPlayer: Player
+    var musicPosition: Int = -1
+    var bookMarker: MutableMap<Long, Int> = mutableMapOf()
+    lateinit var uriList: ArrayList<Uri>
+    lateinit var idList: ArrayList<Long>
     private var new: Boolean = false
-    private val handler = Handler(Looper.getMainLooper())
+    val handler = Handler(Looper.getMainLooper())
 
     private var isBound = false
     private val connection = object : ServiceConnection {
@@ -48,7 +39,6 @@ class PlayActivity : AppCompatActivity() {
             val binder = service as Player.PlayerBinder
             musicPlayer = binder.getService()
             isBound = true
-
             handleMusicPlayback()
         }
 
@@ -57,18 +47,18 @@ class PlayActivity : AppCompatActivity() {
         }
     }
 
-    private lateinit var rootView: View
-    private lateinit var playButton: MaterialButton
-    private lateinit var bookMarkButton: MaterialButton
-    private lateinit var showSpeed: MaterialTextView
-    private lateinit var speedSlower: MaterialTextView
-    private lateinit var speedFaster: MaterialTextView
-    private lateinit var progressBar: Slider
-    private lateinit var nextButton: MaterialButton
-    private lateinit var previousButton: MaterialButton
-    private lateinit var backButton: MaterialButton
-    private lateinit var titleText: androidx.appcompat.widget.AppCompatTextView
-    private lateinit var albumArt: ImageView
+    lateinit var rootView: View
+    lateinit var playButton: MaterialButton
+    lateinit var bookMarkButton: MaterialButton
+    lateinit var showSpeed: MaterialTextView
+    lateinit var speedSlower: MaterialTextView
+    lateinit var speedFaster: MaterialTextView
+    lateinit var progressBar: Slider
+    lateinit var nextButton: MaterialButton
+    lateinit var previousButton: MaterialButton
+    lateinit var backButton: MaterialButton
+    lateinit var titleText: androidx.appcompat.widget.AppCompatTextView
+    lateinit var albumArt: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,8 +86,6 @@ class PlayActivity : AppCompatActivity() {
             continuePlay = intent.getBooleanExtra("continuePlay", false)
             musicPosition = intent.getIntExtra("musicPosition", -1)
             val bookMarkerBundle = intent.getBundleExtra("bookMarker")!!
-            titleList = intent.getStringArrayListExtra("musicTitleList")!!
-            artistList = intent.getStringArrayListExtra("musicArtistList")!!
             val uriListString = intent.getStringArrayListExtra("musicUriList")!!
             val idArray = intent.getLongArrayExtra("musicId")!!
             new = intent.getBooleanExtra("newSong", false)
@@ -111,23 +99,13 @@ class PlayActivity : AppCompatActivity() {
             idList = idArray.toCollection(ArrayList())
         }
 
-        if (uriList.isEmpty()) {
-            popUpAlert()
-            playButton.isEnabled = false
-            bookMarkButton.isEnabled = false
-            speedSlower.isEnabled = false
-            speedFaster.isEnabled = false
-            progressBar.isEnabled = false
-            nextButton.isEnabled = false
-            previousButton.isEnabled = false
-        }
+        setUsability()
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        updateTitle()
 
         bindService()
 
@@ -137,14 +115,14 @@ class PlayActivity : AppCompatActivity() {
 
     }
 
-    private fun bindService() {
+    protected fun bindService() {
         if (!isBound) {
             val intent = Intent(this, Player::class.java)
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
     }
 
-    private fun unbindService() {
+    protected fun unbindService() {
         if (isBound) {
             unbindService(connection)
             isBound = false
@@ -156,16 +134,27 @@ class PlayActivity : AppCompatActivity() {
             if (!checkBookmark(idList[musicPosition])) {
                 tryPlay(musicPosition)
             } else {
-                popupMarker()
+                PopUpWindow(this).popupMarker(musicPosition)
             }
-        } else if (musicPosition == -1) {
+        } else if (musicPosition == -1 &&
+            !musicPlayer.stateCheck(1)) {
             if (uriList.isNotEmpty()) {
                 tryPlay(0)
                 musicPlayer.pauseAndResume()
             }
+        } else if (musicPlayer.stateCheck(1) ||
+            musicPlayer.getProgress() != 0)
+        {
+            val tempUri = musicPlayer.getUri()
+            for (uri in uriList) {
+                if (tempUri == uri) {
+                    musicPosition = uriList.indexOf(uri)
+                    break
+                }
+            }
         } else {
-            if (checkError()) {
-                popUpAlert()
+            if (musicPlayer.stateCheck(0)) {
+                PopUpWindow(this).popUpAlert()
             }
         }
 
@@ -177,22 +166,18 @@ class PlayActivity : AppCompatActivity() {
             if (musicPosition != -1) {
                 setBookMark(musicPosition)
             }
-            setIcon()
+            UIAdapter(this).setIcon()
         }
 
-        if (uriList.isNotEmpty()) {
-            updateBar(
-                progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
-            )
-            progressBar.addOnChangeListener { slider, value, fromUser ->
-                if (fromUser) {
-                    val newProgress = value.toInt()
-                    musicPlayer.seekTo(newProgress)
-                }
+        UIAdapter(this).updateBar(
+            progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
+        )
+        progressBar.addOnChangeListener { _, value, fromUser ->
+            if (fromUser) {
+                val newProgress = value.toInt()
+                musicPlayer.seekTo(newProgress)
             }
         }
-
-        setColor()
 
         speedSlower.setOnClickListener() {
             speedVal -= 0.5F
@@ -213,14 +198,14 @@ class PlayActivity : AppCompatActivity() {
 
         nextButton.setOnClickListener() {
             jumpAnotherSong(true)
-            updateBar(
+            UIAdapter(this).updateBar(
                 progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
             )
         }
 
         previousButton.setOnClickListener() {
             jumpAnotherSong(false)
-            updateBar(
+            UIAdapter(this).updateBar(
                 progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
             )
         }
@@ -231,122 +216,50 @@ class PlayActivity : AppCompatActivity() {
 
         checkPlayProgress()
         updateSpeed()
-        updateTitle()
-        updateArt()
-        setIcon()
+        UIAdapter(this).updateUIGroup(colorVal)
     }
 
-    private fun setColor() {
-        val typedValue = TypedValue()
-        theme.resolveAttribute(com.google.android.material.R.attr.colorSurface,
-            typedValue, true)
-        val colorSurface = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary,
-            typedValue, true)
-        val colorPrimary = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceInverse,
-            typedValue, true)
-        val colorSurfaceInverse = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface,
-            typedValue, true)
-        val colorOnSurface = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorOnPrimary,
-            typedValue, true)
-        val colorOnPrimary = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceInverse,
-            typedValue, true)
-        val colorOnSurfaceInverse = typedValue.data
-        when (colorVal) {
-            1 -> {
-                rootView.setBackgroundColor(colorSurface)
-                updateTextColor(colorSurface, colorOnSurface, colorOnSurface)
-            }
-            2 -> {
-                val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                        Configuration.UI_MODE_NIGHT_YES
-                val albumDominantColor = extractDominantColor()
-                if (albumDominantColor != 0) {
-                    rootView.setBackgroundColor(albumDominantColor)
-                    updateButtonColor(albumDominantColor, false)
-                    updateBarColor(
-                        lightenColor(albumDominantColor, 0.6F),
-                        darkenColor(albumDominantColor, 0.4F)
-                    )
-                    if (isDarkMode) {
-                        updateTextColor(albumDominantColor, colorOnSurfaceInverse, colorOnSurface)
-                    } else {
-                        updateTextColor(albumDominantColor, colorOnSurface, colorOnSurfaceInverse)
-                    }
-                } else {
-                    rootView.setBackgroundColor(colorSurface)
-                    updateButtonColor(colorPrimary, true)
-                    updateBarColor(colorPrimary, colorOnSurfaceInverse)
-                    updateTextColor(colorPrimary, colorOnSurface, colorOnSurface)
-                }
-
-            }
-            3 -> {
-                rootView.setBackgroundColor(colorSurfaceInverse)
-                updateTextColor(colorSurfaceInverse, colorOnSurfaceInverse, colorOnSurfaceInverse)
-            }
-        }
-    }
-
-    private fun extractDominantColor(): Int {
-        val defaultColor = 0
-        val albumArt = musicPlayer.getAlbumArt()
-        return if (albumArt != null) {
-            val palette = Palette.from(albumArt).generate()
-            palette.getDominantColor(defaultColor)
+    private fun setUsability() {
+        if (uriList.isEmpty()) {
+            PopUpWindow(this).popUpAlert()
+            playButton.isEnabled = false
+            bookMarkButton.isEnabled = false
+            speedSlower.isEnabled = false
+            speedFaster.isEnabled = false
+            progressBar.isEnabled = false
+            nextButton.isEnabled = false
+            previousButton.isEnabled = false
         } else {
-            defaultColor
+            playButton.isEnabled = true
+            bookMarkButton.isEnabled = true
+            speedSlower.isEnabled = true
+            speedFaster.isEnabled = true
+            progressBar.isEnabled = true
+            nextButton.isEnabled = true
+            previousButton.isEnabled = true
         }
     }
 
-    private fun lightenColor(color: Int, factor: Float): Int {
-        val red = Color.red(color)
-        val green = Color.green(color)
-        val blue = Color.blue(color)
-
-        val newRed = (red + (255 - red) * factor).toInt()
-        val newGreen = (green + (255 - green) * factor).toInt()
-        val newBlue = (blue + (255 - blue) * factor).toInt()
-
-        return Color.rgb(newRed, newGreen, newBlue)
-    }
-
-    private fun darkenColor(color: Int, factor: Float): Int {
-        val red = Color.red(color)
-        val green = Color.green(color)
-        val blue = Color.blue(color)
-
-        val newRed = (red * (1 - factor)).toInt()
-        val newGreen = (green * (1 - factor)).toInt()
-        val newBlue = (blue * (1 - factor)).toInt()
-
-        return Color.rgb(newRed, newGreen, newBlue)
-    }
-
-    private fun tryPlay(position: Int) {
+    fun tryPlay(position: Int) {
         musicPlayer.stop()
-        setIcon()
+        UIAdapter(this).setIcon()
         try {
             musicPlayer.play(uriList[position], speedVal)
         }catch  (e: Exception) {
             e.printStackTrace()
-            popUpAlert()
+            PopUpWindow(this).popUpAlert()
             endActivity()
         }
-        if (checkError()) {
-            popUpAlert()
+        if (musicPlayer.stateCheck(0)) {
+            PopUpWindow(this).popUpAlert()
         }
-        setIcon()
+        UIAdapter(this).setIcon()
     }
 
     private fun setPlaySpeed(speed: Float) {
-        if (checkPlaying()) {
+        if (musicPlayer.stateCheck(1)) {
             musicPlayer.setSpeed(speed)
-        } else if (checkPaused()) {
+        } else if (musicPlayer.stateCheck(2)) {
             musicPlayer.setSpeed(speed)
             musicPlayer.pauseAndResume()
         }
@@ -360,23 +273,7 @@ class PlayActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkError() : Boolean {
-        return musicPlayer.mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.ERROR
-    }
-
-    private fun checkPlaying() : Boolean {
-        return musicPlayer.mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.PLAYING
-    }
-
-    private fun checkPaused() : Boolean {
-        return musicPlayer.mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.PAUSED
-    }
-
-    private fun checkStopped() : Boolean {
-        return musicPlayer.mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.STOPPED
-    }
-
-    private fun checkBookmark(id: Long) : Boolean {
+    fun checkBookmark(id: Long) : Boolean {
         if (bookMarker.isEmpty()) {
             return false
         }
@@ -389,20 +286,8 @@ class PlayActivity : AppCompatActivity() {
         return true
     }
 
-    private fun checkLight(color: Int): Int {
-        val red = (color shr 16) and 0xFF
-        val green = (color shr 8) and 0xFF
-        val blue = color and 0xFF
-
-        val brightness = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
-        if (brightness > 0.5) {
-            return 1
-        }
-        return 0
-    }
-
     private fun pauseOrContinue() {
-        if (!checkStopped()) {
+        if (!musicPlayer.stateCheck(3)) {
             if (musicPosition != -1) {
                 musicPlayer.pauseAndResume()
             } else {
@@ -419,11 +304,8 @@ class PlayActivity : AppCompatActivity() {
                 tryPlay(musicPosition)
                 handler.post({ checkPlayProgress() })
             }
-            setColor()
         }
-        setIcon()
-        updateTitle()
-        updateArt()
+        UIAdapter(this).updateUIGroup(colorVal)
     }
 
     private fun jumpAnotherSong(next: Boolean) {
@@ -432,24 +314,21 @@ class PlayActivity : AppCompatActivity() {
             if (!checkBookmark(idList[musicPosition])) {
                 tryPlay(musicPosition)
             } else {
-                popupMarker()
+                PopUpWindow(this).popupMarker(musicPosition)
             }
         } else {
             musicPosition = (musicPosition - 1 + uriList.size) % uriList.size
             if (!checkBookmark(idList[musicPosition])) {
                 tryPlay(musicPosition)
             } else {
-                popupMarker()
+                PopUpWindow(this).popupMarker(musicPosition)
             }
         }
         handler.post({ checkPlayProgress() })
-        updateTitle()
-        updateArt()
-        setIcon()
-        setColor()
+        UIAdapter(this).updateUIGroup(colorVal)
     }
 
-    private fun endActivity() {
+    fun endActivity() {
         val intent2 = Intent()
         val bookMarkerBundle = Bundle()
         for ((id, marker) in bookMarker) {
@@ -467,151 +346,25 @@ class PlayActivity : AppCompatActivity() {
     }
 
     private fun checkPlayProgress() {
-        if ((checkStopped() || musicPlayer.complete()) &&
+        if ((musicPlayer.stateCheck(3) || musicPlayer.complete()) &&
             musicPosition != -1
             ) {
             handler.postDelayed({
                 if (!continuePlay) {
                     musicPlayer.stop()
-                    setIcon()
+                    UIAdapter(this).setIcon()
                 } else {
                     jumpAnotherSong(true)
                 }
-            }, 750 / speedVal.toLong())
+            }, 1000 / speedVal.toLong())
         }
-        else handler.postDelayed({ checkPlayProgress() }, 100)
-    }
-
-    private fun updateBar(progressBar: Slider, progress: Int, duration: Int) {
-        if (progress <= duration && !checkError()) {
-            progressBar.value = progress.toFloat()
-            progressBar.valueTo = duration.toFloat()
-        }
-        handler.postDelayed({ updateBar(
-            progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
-        ) }, 100)
-    }
-
-    private fun updateTitle() {
-        setTitle(R.string.title_activity_player)
-        if (musicPosition != -1) { setTitle(titleList[musicPosition]) }
-        titleText.text = title
-    }
-
-    private fun updateArt() {
-        if (musicPosition != -1) {
-            val albumArtBitmap = musicPlayer.getAlbumArt()
-            albumArt.setImageBitmap(albumArtBitmap)
+        else {
+            UIAdapter(this).setIcon()
+            handler.postDelayed({ checkPlayProgress() }, 100)
         }
     }
 
-    private fun updateTextColor(color: Int, darkColor: Int, lightColor: Int) {
-        val type = checkLight(color)
-        if (type == 1) {
-            titleText.setTextColor(darkColor)
-            showSpeed.setTextColor(darkColor)
-            val drawablesS = speedSlower.compoundDrawablesRelative
-            val drawablesF = speedFaster.compoundDrawablesRelative
-            val drawableEnd = drawablesS[2]
-            val drawableStart = drawablesF[0]
-            if (drawableEnd != null) {
-                drawableEnd.setTint(darkColor)
-                drawableStart.setTint(darkColor)
-                speedSlower.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    drawablesS[0], drawablesS[1], drawableEnd, drawablesS[3]
-                )
-                speedFaster.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    drawableStart, drawablesF[1], drawablesF[2], drawablesF[3]
-                )
-            }
-
-            val insetsController = window.insetsController
-            insetsController?.setSystemBarsAppearance(
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-            )
-        } else {
-            titleText.setTextColor(lightColor)
-            showSpeed.setTextColor(lightColor)
-            val drawablesS = speedSlower.compoundDrawablesRelative
-            val drawablesF = speedFaster.compoundDrawablesRelative
-            val drawableEnd = drawablesS[2]
-            val drawableStart = drawablesF[0]
-            if (drawableEnd != null) {
-                drawableEnd.setTint(lightColor)
-                drawableStart.setTint(lightColor)
-                speedSlower.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    drawablesS[0], drawablesS[1], drawableEnd, drawablesS[3]
-                )
-                speedFaster.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    drawableStart, drawablesF[1], drawablesF[2], drawablesF[3]
-                )
-            }
-
-            val insetsController = window.insetsController
-            insetsController?.setSystemBarsAppearance(
-                0,
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-            )
-        }
-    }
-
-    private fun updateButtonColor(color: Int, isDefault: Boolean) {
-        val typedValue = TypedValue()
-        theme.resolveAttribute(com.google.android.material.R.attr.colorOnPrimary,
-            typedValue, true)
-        val colorOnPrimary = typedValue.data
-        val iconColor: ColorStateList
-        if (isDefault) {
-            iconColor = ColorStateList.valueOf(colorOnPrimary)
-        } else {
-            if (checkLight(color) == 1) {
-                iconColor = ColorStateList.valueOf(getColor(R.color.black))
-            } else {
-                iconColor = ColorStateList.valueOf(getColor(R.color.white))
-            }
-        }
-        backButton.backgroundTintList = ColorStateList.valueOf(color)
-        backButton.iconTint = iconColor
-        backButton.setTextColor(iconColor)
-        bookMarkButton.backgroundTintList = ColorStateList.valueOf(color)
-        bookMarkButton.iconTint = iconColor
-        bookMarkButton.setTextColor(iconColor)
-        playButton.backgroundTintList = ColorStateList.valueOf(color)
-        playButton.iconTint = iconColor
-        nextButton.backgroundTintList = ColorStateList.valueOf(color)
-        nextButton.iconTint = iconColor
-        previousButton.backgroundTintList = ColorStateList.valueOf(color)
-        previousButton.iconTint = iconColor
-    }
-
-    private fun updateBarColor(vibrantColor: Int, mutedColor: Int) {
-        progressBar.trackActiveTintList = ColorStateList.valueOf(vibrantColor)
-        progressBar.trackInactiveTintList = ColorStateList.valueOf(mutedColor)
-        progressBar.thumbTintList = ColorStateList.valueOf(vibrantColor)
-    }
-
-    private fun setIcon() {
-        if (checkPlaying()) {
-            playButton.setIconResource(R.drawable.ic_pause_circle_24px)
-        } else {
-            playButton.setIconResource(R.drawable.ic_play_arrow_24px)
-        }
-        if (musicPosition >= 0) {
-            if (checkBookmark(idList[musicPosition])) {
-                bookMarkButton.setIconResource(R.drawable.ic_bookmark_check_24px)
-                bookMarkButton.text = intToTime(bookMarker[idList[musicPosition]]!!)
-            } else {
-                bookMarkButton.setIconResource(R.drawable.ic_bookmark_add_24px)
-                bookMarkButton.text = "--:--"
-            }
-        } else {
-            bookMarkButton.setIconResource(R.drawable.ic_bookmark_add_24px)
-            bookMarkButton.text = "--:--"
-        }
-    }
-
-    private fun intToTime(time: Int): String {
+    fun intToTime(time: Int): String {
         val seconds = time / 1000
         val minutes = seconds / 60
         val remainingSeconds = seconds % 60
@@ -627,51 +380,6 @@ class PlayActivity : AppCompatActivity() {
             2.5F -> showSpeed.text = "2.5X"
             3F -> showSpeed.text = "3X"
         }
-    }
-
-    private fun popupMarker() {
-        val builder = MaterialAlertDialogBuilder(this)
-        builder.setTitle(R.string.title_play_bookmark)
-        tryPlay(musicPosition)
-        musicPlayer.pauseAndResume()
-        setIcon()
-        builder.setMessage(R.string.bookmark_nottification)
-        builder.setPositiveButton(R.string.bookmark_yes) { dialog, _ ->
-            tryPlay(musicPosition)
-            musicPlayer.seekTo(bookMarker[idList[musicPosition]]!!)
-            setIcon()
-            dialog.dismiss()
-        }
-        builder.setNegativeButton(R.string.bookmark_no) { dialog, _ ->
-            tryPlay(musicPosition)
-            setIcon()
-            dialog.dismiss()
-        }
-        val dialog = builder.create()
-        dialog.show()
-    }
-
-    private fun popUpAlert() {
-        val builder = MaterialAlertDialogBuilder(this)
-        builder.setTitle(R.string.title_play_failure)
-        if (uriList.isEmpty()) {
-            builder.setMessage(R.string.null_alart)
-            builder.setNegativeButton(R.string.jump_back) { dialog, _ ->
-                dialog.dismiss()
-                endActivity()
-            }
-        } else {
-            builder.setMessage(R.string.expection_alart)
-            builder.setPositiveButton(R.string.alart_button_sidmiss) { dialog, _ ->
-                dialog.dismiss()
-            }
-            builder.setNegativeButton(R.string.jump_back) { dialog, _ ->
-                dialog.dismiss()
-                endActivity()
-            }
-        }
-        val dialog = builder.create()
-        dialog.show()
     }
 
     override fun onResume() {
