@@ -59,7 +59,7 @@
                 android:layout_width="0dp"
                 android:layout_weight="1.5"
                 android:layout_height="23dp"
-                android:gravity="center"
+                android:gravity="center_vertical|end"
                 android:layout_marginStart="10dp" />
         </LinearLayout>
     </LinearLayout>
