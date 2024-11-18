@@ -42,7 +42,10 @@ class Scanner(private val context: Context) {
 
             while (it.moveToNext()) {
                 val title = it.getString(titleColumn)
-                val artist = it.getString(artistColumn)
+                var artist = it.getString(artistColumn)
+                if (artist == null || artist == "<unknown>") {
+                    artist = context.getString(R.string.unknown_artisit)
+                }
                 val id = it.getLong(idColumn)
 
                 val musicUri = Uri.withAppendedPath(                                                // use the ID to construct the URI of the music file

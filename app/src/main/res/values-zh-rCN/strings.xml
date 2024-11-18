@@ -24,4 +24,5 @@
     <string name="bookmark_no">不，从头开始</string>
     <string name="playback_channel">播控通知</string>
     <string name="title_empty_fialure">读取文件失败</string>
+    <string name="unknown_artisit">未知作者</string>
 </resources>

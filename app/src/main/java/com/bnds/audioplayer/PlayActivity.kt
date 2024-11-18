@@ -193,7 +193,6 @@ open class PlayActivity : AppCompatActivity() {
 
     private fun setUsability() {
         if (musicSize == 0) {
-//            PopUpWindow(this).popUpAlert()
             playButton.isEnabled = false
             bookMarkButton.isEnabled = false
             speedSlower.isEnabled = false
