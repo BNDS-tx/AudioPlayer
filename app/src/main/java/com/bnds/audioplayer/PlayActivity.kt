@@ -4,7 +4,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -24,12 +23,10 @@ import java.util.Locale
 open class PlayActivity : AppCompatActivity() {
     private var speedVal: Float = 1F
     private var colorVal: Int = 1
-    private var continuePlay: Boolean = false
     lateinit var musicPlayer: Player
+    var musicSize: Int = 0
     var musicPosition: Int = -1
     var bookMarker: MutableMap<Long, Int> = mutableMapOf()
-    lateinit var uriList: ArrayList<Uri>
-    lateinit var idList: ArrayList<Long>
     private var new: Boolean = false
     val handler = Handler(Looper.getMainLooper())
 
@@ -79,50 +76,43 @@ open class PlayActivity : AppCompatActivity() {
 
         titleText.isSelected = true
 
-        val intent : Intent = getIntent()
-        if (intent != null && intent.hasExtra("Speed Values")) {
-            speedVal = intent.getFloatExtra("Speed Values", 1F)
-            colorVal = intent.getIntExtra("Color Values", 1)
-            continuePlay = intent.getBooleanExtra("continuePlay", false)
-            musicPosition = intent.getIntExtra("musicPosition", -1)
-            val bookMarkerBundle = intent.getBundleExtra("bookMarker")!!
-            val uriListString = intent.getStringArrayListExtra("musicUriList")!!
-            val idArray = intent.getLongArrayExtra("musicId")!!
-            new = intent.getBooleanExtra("newSong", false)
-            bookMarkerBundle.keySet()?.forEach { key ->
-                val id = key.toLongOrNull() // 将键转换回 Long
-                if (id != null) {
-                    bookMarker[id] = bookMarkerBundle.getInt(key)
+        val intent : Intent = intent
+        if (intent.hasExtra("valid")) {                                                       // receive bundle data pack from PlayListActivity
+            val transferData = intent.extras
+            if (transferData != null) {                                                             // unpack the bundle data pack if it's valid
+                transferData.keySet()?.forEach { key ->
+                    when (key) {
+                        "Speed Values" -> speedVal = transferData.getFloat(key)
+                        "Color Values" -> colorVal = transferData.getInt(key)
+                        "musicPosition" -> musicPosition = transferData.getInt(key)
+                        "newSong" -> new = transferData.getBoolean(key)
+                    }
                 }
             }
-            uriList = uriListString.map { Uri.parse(it) } as ArrayList<Uri>
-            idList = idArray.toCollection(ArrayList())
         }
 
-        setUsability()
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->           // make the display view fitting the window
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
-        bindService()
+        bindService()                                                                               // bind service
 
-        onBackPressedDispatcher.addCallback(this) {
+        onBackPressedDispatcher.addCallback(this) {                                          // force to transfer the data back to PlayListActivity
             endActivity()
         }
 
     }
 
-    protected fun bindService() {
+    private fun bindService() {
         if (!isBound) {
             val intent = Intent(this, Player::class.java)
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
     }
 
-    protected fun unbindService() {
+    private fun unbindService() {
         if (isBound) {
             unbindService(connection)
             isBound = false
@@ -130,98 +120,80 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun handleMusicPlayback() {
-        if (new) {
-            if (!checkBookmark(idList[musicPosition])) {
-                tryPlay(musicPosition)
-            } else {
-                PopUpWindow(this).popupMarker(musicPosition)
-            }
-        } else if (musicPosition == -1 &&
-            !musicPlayer.stateCheck(1)) {
-            if (uriList.isNotEmpty()) {
-                tryPlay(0)
-                musicPlayer.pauseAndResume()
-            }
-        } else if (musicPlayer.stateCheck(1) ||
-            musicPlayer.getProgress() != 0)
-        {
-            val tempUri = musicPlayer.getUri()
-            for (uri in uriList) {
-                if (tempUri == uri) {
-                    musicPosition = uriList.indexOf(uri)
-                    break
-                }
-            }
-        } else {
-            if (musicPlayer.stateCheck(0)) {
-                PopUpWindow(this).popUpAlert()
-            }
-        }
+        musicSize = musicPlayer.getMusicSize()
+        setUsability()
+        musicPlayer.setContext(this)
 
-        playButton.setOnClickListener() {
+        musicPlayer.startPlaying(new, musicPosition, speedVal)
+        musicPosition = musicPlayer.getThisPosition()
+
+        playButton.setOnClickListener {
             pauseOrContinue()
         }
 
-        bookMarkButton.setOnClickListener() {
+        bookMarkButton.setOnClickListener {
             if (musicPosition != -1) {
-                setBookMark(musicPosition)
+                musicPlayer.setBookmark()
+                bookMarker = musicPlayer.getBookmark()
             }
             UIAdapter(this).setIcon()
         }
 
-        UIAdapter(this).updateBar(
+        UIAdapter(this).updateBar(                                                           // update the slider with progress
             progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
         )
-        progressBar.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) {
-                val newProgress = value.toInt()
+        progressBar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: Slider) {                                     // stand by when the tracker is being dragged till it is released
+            }
+            override fun onStopTrackingTouch(slider: Slider) {                                      // update progress when the tracker is released
+                val newProgress = slider.value.toInt()
                 musicPlayer.seekTo(newProgress)
             }
-        }
+        })
 
-        speedSlower.setOnClickListener() {
+        speedSlower.setOnClickListener {
             speedVal -= 0.5F
             if (speedVal < 0.5F) {
                 speedVal = 0.5F
             }
             setPlaySpeed(speedVal)
-            updateSpeed()
+            updateShowSpeed()
         }
-        speedFaster.setOnClickListener() {
+        speedFaster.setOnClickListener {
             speedVal += 0.5F
             if (speedVal > 3F) {
                 speedVal = 3F
             }
             setPlaySpeed(speedVal)
-            updateSpeed()
+            updateShowSpeed()
         }
 
-        nextButton.setOnClickListener() {
+        nextButton.setOnClickListener {
             jumpAnotherSong(true)
             UIAdapter(this).updateBar(
                 progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
             )
         }
 
-        previousButton.setOnClickListener() {
+        previousButton.setOnClickListener {
             jumpAnotherSong(false)
             UIAdapter(this).updateBar(
                 progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
             )
         }
 
-        backButton.setOnClickListener() {
+        backButton.setOnClickListener {
             endActivity()
         }
 
         checkPlayProgress()
-        updateSpeed()
+        updateShowSpeed()
         UIAdapter(this).updateUIGroup(colorVal)
     }
 
     private fun setUsability() {
-        if (uriList.isEmpty()) {
-            PopUpWindow(this).popUpAlert()
+        if (musicSize == 0) {
+//            PopUpWindow(this).popUpAlert()
             playButton.isEnabled = false
             bookMarkButton.isEnabled = false
             speedSlower.isEnabled = false
@@ -240,36 +212,12 @@ open class PlayActivity : AppCompatActivity() {
         }
     }
 
-    fun tryPlay(position: Int) {
-        musicPlayer.stop()
-        UIAdapter(this).setIcon()
-        try {
-            musicPlayer.play(uriList[position], speedVal)
-        }catch  (e: Exception) {
-            e.printStackTrace()
-            PopUpWindow(this).popUpAlert()
-            endActivity()
-        }
-        if (musicPlayer.stateCheck(0)) {
-            PopUpWindow(this).popUpAlert()
-        }
-        UIAdapter(this).setIcon()
-    }
-
     private fun setPlaySpeed(speed: Float) {
         if (musicPlayer.stateCheck(1)) {
             musicPlayer.setSpeed(speed)
         } else if (musicPlayer.stateCheck(2)) {
             musicPlayer.setSpeed(speed)
             musicPlayer.pauseAndResume()
-        }
-    }
-
-    private fun setBookMark(position: Int) {
-        if (!checkBookmark(idList[position])) {
-            bookMarker[idList[position]] = musicPlayer.getProgress()
-        } else {
-            bookMarker[idList[position]] = 0
         }
     }
 
@@ -287,58 +235,29 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun pauseOrContinue() {
-        if (!musicPlayer.stateCheck(3)) {
-            if (musicPosition != -1) {
-                musicPlayer.pauseAndResume()
-            } else {
-                musicPosition = 0
-                tryPlay(musicPosition)
-                handler.post({ checkPlayProgress() })
-            }
-        } else {
-            if (musicPosition == -1) {
-                musicPosition = 0
-                tryPlay(musicPosition)
-                handler.post({ checkPlayProgress() })
-            } else {
-                tryPlay(musicPosition)
-                handler.post({ checkPlayProgress() })
-            }
-        }
+        UIAdapter(this).setIcon()
+        musicPosition = musicPlayer.getThisPosition()
+        musicPlayer.pauseAndResume()
         UIAdapter(this).updateUIGroup(colorVal)
     }
 
     private fun jumpAnotherSong(next: Boolean) {
         if (next) {
-            musicPosition = (musicPosition + 1) % uriList.size
-            if (!checkBookmark(idList[musicPosition])) {
-                tryPlay(musicPosition)
-            } else {
-                PopUpWindow(this).popupMarker(musicPosition)
-            }
+            musicPlayer.playNext()
         } else {
-            musicPosition = (musicPosition - 1 + uriList.size) % uriList.size
-            if (!checkBookmark(idList[musicPosition])) {
-                tryPlay(musicPosition)
-            } else {
-                PopUpWindow(this).popupMarker(musicPosition)
-            }
+            musicPlayer.playPrevious()
         }
-        handler.post({ checkPlayProgress() })
+        musicPosition = musicPlayer.getThisPosition()
         UIAdapter(this).updateUIGroup(colorVal)
     }
 
-    fun endActivity() {
+    private fun endActivity() {
         val intent2 = Intent()
-        val bookMarkerBundle = Bundle()
-        for ((id, marker) in bookMarker) {
-            bookMarkerBundle.putInt(id.toString(), marker)
-        }
-        intent2.putExtra("Speed Values", speedVal)
-        intent2.putExtra("Color Values", colorVal)
-        intent2.putExtra("continuePlay", continuePlay)
-        intent2.putExtra("bookMarker", bookMarkerBundle)
-        intent2.putExtra("musicPosition", musicPosition)
+        val transferData = Bundle()
+        transferData.putFloat("Speed Values", speedVal)
+        transferData.putInt("Color Values", colorVal)
+        transferData.putInt("musicPosition", musicPosition)
+        intent2.putExtras(transferData)
         setResult(RESULT_OK, intent2)
         handler.removeCallbacksAndMessages(null)
         unbindService()
@@ -346,22 +265,10 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun checkPlayProgress() {
-        if ((musicPlayer.stateCheck(3) || musicPlayer.complete()) &&
-            musicPosition != -1
-            ) {
-            handler.postDelayed({
-                if (!continuePlay) {
-                    musicPlayer.stop()
-                    UIAdapter(this).setIcon()
-                } else {
-                    jumpAnotherSong(true)
-                }
-            }, 1000 / speedVal.toLong())
-        }
-        else {
-            UIAdapter(this).setIcon()
-            handler.postDelayed({ checkPlayProgress() }, 100)
-        }
+        musicPosition = musicPlayer.getThisPosition()
+        bookMarker = musicPlayer.getBookmark()
+        UIAdapter(this).updateUIGroup(colorVal)
+        handler.postDelayed({ checkPlayProgress() }, 100)
     }
 
     fun intToTime(time: Int): String {
@@ -371,14 +278,14 @@ open class PlayActivity : AppCompatActivity() {
         return String.format(Locale.getDefault(), "%02d:%02d", minutes, remainingSeconds)
     }
 
-    private fun updateSpeed() {
+    private fun updateShowSpeed() {
         when (speedVal) {
-            0.5F -> showSpeed.text = "0.5X"
-            1F -> showSpeed.text = "1X"
-            1.5F -> showSpeed.text = "1.5X"
-            2F -> showSpeed.text = "2X"
-            2.5F -> showSpeed.text = "2.5X"
-            3F -> showSpeed.text = "3X"
+            0.5F -> showSpeed.setText(R.string.speed_0_5)
+            1F -> showSpeed.setText(R.string.speed_1)
+            1.5F -> showSpeed.setText(R.string.speed_1_5)
+            2F -> showSpeed.setText(R.string.speed_2)
+            2.5F -> showSpeed.setText(R.string.speed_2_5)
+            3F -> showSpeed.setText(R.string.speed_3)
         }
     }
 

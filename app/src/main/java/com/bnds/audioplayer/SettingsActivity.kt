@@ -1,17 +1,18 @@
 package com.bnds.audioplayer
 
 import android.app.Activity
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.res.Configuration
 import android.os.Bundle
-import android.view.WindowInsetsController
-import android.widget.Button
-import android.widget.Switch
+import android.os.IBinder
+import android.view.View
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
@@ -19,9 +20,22 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 class SettingsActivity : AppCompatActivity() {
     private var speedVal: Float = 1F
     private var colorVal: Int = 1
-    private var position: Int = -1
     private var isConnect: Boolean = false
-    private var bookMarkerBundle: Bundle = Bundle()
+
+    private lateinit var player: Player
+    private var isBound = false
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as Player.PlayerBinder
+            player = binder.getService()
+            isBound = true
+            moveContext()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            isBound = false
+        }
+    }
 
     private lateinit var backButton: MaterialButton
     private lateinit var connectButton: com.google.android.material.materialswitch.MaterialSwitch
@@ -57,26 +71,29 @@ class SettingsActivity : AppCompatActivity() {
             insets
         }
 
-        var intent : Intent = getIntent()
-        if (intent != null && intent.hasExtra("Speed Values")) {
-            speedVal = intent.getFloatExtra("Speed Values", 1F)
-            colorVal = intent.getIntExtra("Color Values", 1)
-            isConnect = intent.getBooleanExtra("continuePlay", false)
-            position = intent.getIntExtra("musicPosition", -1)
-            bookMarkerBundle = intent.getBundleExtra("bookMarker")!!
+        val intent : Intent = intent
+        if (intent.hasExtra("valid")) {
+            val transferData = intent.extras
+            if (transferData != null) {
+                transferData.keySet()?.forEach { key ->
+                    when (key) {
+                        "Speed Values" -> speedVal = transferData.getFloat(key)
+                        "Color Values" -> colorVal = transferData.getInt(key)
+                        "continuePlay" -> isConnect = transferData.getBoolean(key)
+                    }
+                }
+            }
         }
 
-        backButton.setOnClickListener() {
+        bindService()
+
+        backButton.setOnClickListener {
             endActivity()
         }
 
         connectButton.isChecked = isConnect
-        connectButton.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                isConnect = true
-            } else {
-                isConnect = false
-            }
+        connectButton.setOnCheckedChangeListener { _, isChecked ->
+            isConnect = isChecked
         }
 
         playBackSpeedControl()
@@ -84,6 +101,20 @@ class SettingsActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this) {
             endActivity()
+        }
+    }
+
+    private fun bindService() {
+        if (!isBound) {
+            val intent = Intent(this, Player::class.java)
+            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        }
+    }
+
+    private fun unbindService() {
+        if (isBound) {
+            unbindService(connection)
+            isBound = false
         }
     }
 
@@ -101,6 +132,9 @@ class SettingsActivity : AppCompatActivity() {
                     speedButton2.id -> speedVal = 2F
                     speedButton3.id -> speedVal = 3F
                 }
+            }
+            if (group.checkedButtonId == View.NO_ID) {
+                group.check(checkedId)
             }
         }
     }
@@ -124,26 +158,38 @@ class SettingsActivity : AppCompatActivity() {
             if (isChecked) {
                 when (checkedId) {
                     colorButton1.id -> {
-                        if (!isDarkMode) { colorVal = 1 }
-                        else { colorVal = 3 }
+                        colorVal = if (!isDarkMode) {
+                            1
+                        } else {
+                            3
+                        }
                     }
                     colorButton2.id -> colorVal = 2
                     colorButton3.id -> {
-                        if (!isDarkMode) { colorVal = 3 }
-                        else { colorVal = 1 }
+                        colorVal = if (!isDarkMode) {
+                            3
+                        } else {
+                            1
+                        }
                     }
                 }
+            }
+            if (group.checkedButtonId == View.NO_ID) {
+                group.check(checkedId)
             }
         }
     }
 
+    private fun moveContext() { player.setContext(this) }
+
     private fun endActivity() {
+        unbindService()
         val intent2 = Intent()
-        intent2.putExtra("Speed Values", speedVal)
-        intent2.putExtra("Color Values", colorVal)
-        intent2.putExtra("continuePlay", isConnect)
-        intent2.putExtra("musicPosition", position)
-        intent2.putExtra("bookMarker", bookMarkerBundle)
+        val transferData = Bundle()
+        transferData.putFloat("Speed Values", speedVal)
+        transferData.putInt("Color Values", colorVal)
+        transferData.putBoolean("continuePlay", isConnect)
+        intent2.putExtras(transferData)
         setResult(Activity.RESULT_OK, intent2)
         finish()
     }

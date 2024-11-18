@@ -5,20 +5,24 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.widget.Button
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.slider.Slider
 
@@ -26,12 +30,11 @@ class PlayListActivity : AppCompatActivity() {
 
     private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
     private lateinit var binding: ActivityPlayListBinding
-    private var musicList: List<Music> = emptyList()
+    private var musicSize = 0
     private var speedVal: Float = 1F
     private var colorVal: Int = 1
     private var continuePlay: Boolean = false
     private var musicPosition: Int = -1
-    private var bookMarker: MutableMap<Long, Int> = mutableMapOf()
     private val handler = Handler(Looper.getMainLooper())
 
     private lateinit var mediaPlayer: Player
@@ -41,13 +44,18 @@ class PlayListActivity : AppCompatActivity() {
             val binder = service as Player.PlayerBinder
             mediaPlayer = binder.getService()
             isBound = true
-
             handleMusicPlayback()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             isBound = false
         }
+    }
+
+    private val requiredReadPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        arrayOf(android.Manifest.permission.READ_MEDIA_AUDIO)
+    } else {
+        arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE)
     }
 
     private lateinit var recyclerView: RecyclerView
@@ -73,33 +81,71 @@ class PlayListActivity : AppCompatActivity() {
         setTitle(R.string.title_activity_play_list)
 
         val intent = Intent(this, Player::class.java)
-        startService(intent)
-        bindService(intent)
+
+        if (hasPermissions()) {
+            startService(intent)
+            bindService(intent)
+        } else {
+            requestPermissions()
+        }
 
         activityResultLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result ->
             if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                val speedSetting = result.data!!.getFloatExtra("Speed Values", 1F)
-                colorVal = result.data!!.getIntExtra("Color Values", 1)
-                continuePlay = result.data!!.getBooleanExtra("continuePlay", false)
-                musicPosition = result.data!!.getIntExtra("musicPosition", 0)
-                val bookMarkerBundle = result.data!!.getBundleExtra("bookMarker")!!
-                checkSpeed(speedVal, speedSetting)
-                speedVal = speedSetting
-                bookMarkerBundle.keySet()?.forEach { key ->
-                    val id = key.toLongOrNull() // 将键转换回 Long
-                    if (id != null) {
-                        bookMarker[id] = bookMarkerBundle.getInt(key)
+                var speedSetting = 1F
+                val transferData = result.data!!.extras
+                if (transferData != null) {
+                    transferData.keySet()?.forEach { key ->
+                        when (key) {
+                            "Speed Values" -> speedSetting = transferData.getFloat(key)
+                            "Color Values" -> colorVal = transferData.getInt(key)
+                            "continuePlay" -> continuePlay = transferData.getBoolean(key)
+                            "musicPosition" -> musicPosition = transferData.getInt(key)
+                        }
                     }
                 }
+                checkSpeed(speedVal, speedSetting)
+                speedVal = speedSetting
                 refreshMusicList()
                 setButtonText(toPlayButton)
                 setIcon()
             }
         }
+    }
 
+    private fun hasPermissions(): Boolean {
+        return requiredReadPermissions.all { permission ->
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun requestPermissions() {
+        ActivityCompat.requestPermissions(
+            this, requiredReadPermissions, 101
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 101) {
+            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                startService(Intent(this, Player::class.java))
+                bindService(Intent(this, Player::class.java)) // 如果权限授予，启动并绑定服务
+            } else {
+                Toast.makeText(this, "需要存储权限才能继续操作", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun handleMusicPlayback() {
         refreshMusicList()
+        mediaPlayer.setContext(this)
+        mediaPlayer.setContinues(continuePlay)
 
         setSupportActionBar(findViewById(R.id.toolbar))
         refreshButton.setOnClickListener {
@@ -108,9 +154,9 @@ class PlayListActivity : AppCompatActivity() {
         }
 
         setUsability()
-    }
 
-    private fun handleMusicPlayback() {
+        mediaPlayer.startPlaying(false, musicPosition, speedVal)
+
         settingsButton.setOnClickListener {
             openSettingsActivity()
         }
@@ -119,19 +165,20 @@ class PlayListActivity : AppCompatActivity() {
             playController(mediaPlayer)
         }
 
-        if (musicList.isNotEmpty()) {
-            if (musicPosition == -1) {
-                mediaPlayer.play(musicList[0].uri, speedVal)
-                mediaPlayer.pauseAndResume()
-            }
-            updateBar(progressBar, mediaPlayer.getProgress(), mediaPlayer.getDuration())
-            progressBar.addOnChangeListener { slider, value, fromUser ->
-                if (fromUser) {
-                    val newProgress = value.toInt()
-                    mediaPlayer.seekTo(newProgress)
-                }
-            }
+        if (musicPosition == -1 && musicSize > 0) {                                                 // load the first file as default
+            mediaPlayer.play(0, speedVal)
+            mediaPlayer.pauseAndResume()
         }
+
+        updateBar(progressBar, mediaPlayer.getProgress(), mediaPlayer.getDuration())                // update the slider with progress
+        progressBar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: Slider) {                                     // stand by when the tracker is being dragged till it is released
+            }
+            override fun onStopTrackingTouch(slider: Slider) {                                      // update progress when the tracker is released
+                val newProgress = slider.value.toInt()
+                mediaPlayer.seekTo(newProgress)
+            }
+        })
 
         setButtonText(toPlayButton)
         toPlayButton.setOnClickListener {
@@ -156,26 +203,23 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun refreshMusicList() {
-        val musicScanner = Scanner(this)
-        musicList = musicScanner.scanMusicFiles()
-        val uriList = musicList.map { it.uri.toString() }
-        val idList = musicList.map { it.id }
-        val bookMarkerBundle = Bundle()
-        for ((id, marker) in bookMarker) {
-            bookMarkerBundle.putInt(id.toString(), marker)
-        }
+        mediaPlayer.setMusicList(Scanner(this).scanMusicFiles())
+        musicSize = mediaPlayer.getMusicSize()
+        val transferData = Bundle()
         recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = MusicAdapter(musicList, bookMarker) { music ->
+        recyclerView.adapter = MusicAdapter(
+            mediaPlayer.getMusicList(), mediaPlayer.getBookmark()) { music ->
+            setTransferData(
+                transferData,
+                speedVal,
+                colorVal, null,
+                mediaPlayer.getMusicPosition(music),
+                true
+            )
             val intent : Intent = Intent(this, PlayActivity::class.java).apply(
                 fun Intent.() {
-                    putExtra("Speed Values", speedVal)
-                    putExtra("Color Values", colorVal)
-                    putExtra("continuePlay", continuePlay)
-                    putExtra("musicPosition", musicList.indexOf(music))
-                    putExtra("bookMarker", bookMarkerBundle)
-                    putExtra("musicUriList", ArrayList(uriList))
-                    putExtra("musicId", idList.toLongArray())
-                    putExtra("newSong", true)
+                    putExtras(transferData)
+                    putExtra("valid", true)
                 }
             )
             unbindService()
@@ -184,44 +228,14 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkBookmark(id: Long) : Boolean {
-        if (bookMarker.isEmpty()) {
-            return false
-        }
-        if (!bookMarker.containsKey(id)) {
-            return false
-        }
-        if (bookMarker[id] == 0) {
-            return false
-        }
-        return true
-    }
-
     private fun checkPlayProgress() {
-        if ((mediaPlayer.stateCheck(3) || mediaPlayer.complete()) &&
-            musicPosition != -1
-        ) {
-            handler.postDelayed({
-                if (!continuePlay) {
-                    mediaPlayer.stop()
-                    setIcon()
-                } else {
-                    jumpToNextSong()
-                }
-            }, 1000 / speedVal.toLong())
+        if (musicPosition != -1 && mediaPlayer.getProgress() > 0 &&
+            toPlayButton.text != mediaPlayer.getPositionTitle(musicPosition)) {
+            toPlayButton.text = mediaPlayer.getPositionTitle(musicPosition)
         }
-        else {
-            setIcon()
-            if (mediaPlayer.getProgress() != 0 && musicPosition == -1) {
-                for (i in musicList.indices) {
-                    if (musicList[i].uri == mediaPlayer.getUri()) {
-                        musicPosition = i
-                        break
-                    }
-                }
-            }
-            handler.postDelayed({ checkPlayProgress() }, 100)
-        }
+        setIcon()
+        musicPosition = mediaPlayer.getThisPosition()
+        handler.postDelayed({ checkPlayProgress() }, 100)
     }
 
     private fun checkSpeed(oldSpeed: Float, newSpeed: Float) {
@@ -235,35 +249,24 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
-    private fun jumpToNextSong() {
-        musicPosition = (musicPosition + 1) % musicList.size
-        if (!checkBookmark(musicList[musicPosition].id)) {
-            tryPlay(musicPosition)
-        } else {
-            popupMarker()
-        }
-        handler.post({ checkPlayProgress() } )
-        setButtonText(toPlayButton)
-    }
-
     private fun openPlayActivity(position: Int) {
-        val musicScanner = Scanner(this)
-        musicList = musicScanner.scanMusicFiles()
-        val uriList = musicList.map { it.uri.toString() }
-        val idList = musicList.map { it.id }
         val bookMarkerBundle = Bundle()
-        for ((id, marker) in bookMarker) {
+        for ((id, marker) in mediaPlayer.getBookmark()) {
             bookMarkerBundle.putInt(id.toString(), marker)
         }
+        val transferData = Bundle()
+        setTransferData(
+            transferData,
+            speedVal,
+            colorVal,
+            null,
+            position,
+            false
+        )
         val intent = Intent(this, PlayActivity::class.java).apply(
             fun Intent.() {
-                putExtra("Speed Values", speedVal)
-                putExtra("Color Values", colorVal)
-                putExtra("continuePlay", continuePlay)
-                putExtra("musicPosition", position)
-                putExtra("bookMarker", bookMarkerBundle)
-                putExtra("musicUriList", ArrayList(uriList))
-                putExtra("musicId", idList.toLongArray())
+                putExtras(transferData)
+                putExtra("valid", true)
             }
         )
         unbindService()
@@ -276,14 +279,19 @@ class PlayListActivity : AppCompatActivity() {
         val intent: Intent = Intent(this, SettingsActivity::class.java).apply(
             fun Intent.() {
                 val bookMarkerBundle = Bundle()
-                for ((id, marker) in bookMarker) {
+                for ((id, marker) in mediaPlayer.getBookmark()) {
                     bookMarkerBundle.putInt(id.toString(), marker)
                 }
-                putExtra("Speed Values", speedVal)
-                putExtra("Color Values", colorVal)
-                putExtra("continuePlay", continuePlay)
-                putExtra("musicPosition", musicPosition)
-                putExtra("bookMarker", bookMarkerBundle)
+                val transferData = Bundle()
+                setTransferData(
+                    transferData,
+                    speedVal,
+                    colorVal,
+                    continuePlay,
+                    null, null
+                )
+                putExtras(transferData)
+                putExtra("valid", true)
             }
         )
         unbindService()
@@ -292,100 +300,35 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun playController(mediaPlayer: Player) {
         setIcon()
-        if (musicPosition != -1) {
-            if (mediaPlayer.stateCheck(3)) {
-                mediaPlayer.play(musicList[musicPosition].uri, speedVal)
-                handler.post({ checkPlayProgress() } )
-            } else {
-                mediaPlayer.pauseAndResume()
-            }
-        } else if (mediaPlayer.getProgress() != 0) {
-            mediaPlayer.pauseAndResume()
-        } else {
-            tryPlay(0)
-            musicPosition = 0
-            setButtonText(toPlayButton)
-        }
-        setIcon()
-    }
-
-    private fun popUpAlert() {
-        val builder = MaterialAlertDialogBuilder(this)
-        builder.setTitle(R.string.title_play_failure)
-        builder.setMessage(R.string.expection_alart)
-        builder.setPositiveButton(R.string.alart_button_sidmiss) { dialog, _ ->
-            dialog.dismiss()
-        }
-        builder.setNegativeButton(R.string.jump_back) { dialog, _ ->
-            dialog.dismiss()
-        }
-
-        val dialog = builder.create()
-        dialog.show()
-    }
-
-    private fun popupMarker() {
-        val builder = MaterialAlertDialogBuilder(this)
-        builder.setTitle(R.string.title_play_bookmark)
-        tryPlay(musicPosition)
         mediaPlayer.pauseAndResume()
+        musicPosition = mediaPlayer.getThisPosition()
         setIcon()
-        builder.setMessage(R.string.bookmark_nottification)
-        builder.setPositiveButton(R.string.bookmark_yes) { dialog, _ ->
-            tryPlay(musicPosition)
-            mediaPlayer.seekTo(bookMarker[musicList[musicPosition].id]!!)
-            setIcon()
-            dialog.dismiss()
-        }
-        builder.setNegativeButton(R.string.bookmark_no) { dialog, _ ->
-            tryPlay(musicPosition)
-            setIcon()
-            dialog.dismiss()
-        }
-        val dialog = builder.create()
-        dialog.show()
     }
 
     private fun setButtonText(button: Button) {
-        if (musicPosition != -1) {
-            button.text = musicList[musicPosition].title
+        if (musicPosition != -1 && mediaPlayer.getProgress() > 0) {
+            button.text = mediaPlayer.getPositionTitle(musicPosition)
         } else {
             button.text = getString(R.string.defualt_playing)
         }
     }
 
     private fun setIcon() {
-        if (mediaPlayer.stateCheck(1)) {
-            playButton.setIconResource(R.drawable.ic_pause_circle_24px)
-        } else {
+        if (!mediaPlayer.stateCheck(1)) {
             playButton.setIconResource(R.drawable.ic_play_arrow_24px)
+        } else {
+            playButton.setIconResource(R.drawable.ic_pause_circle_24px)
         }
     }
 
     private fun setUsability() {
-        if (musicList.isEmpty()) {
+        if (musicSize == 0) {
             playButton.isEnabled = false
             progressBar.isEnabled = false
         } else {
             playButton.isEnabled = true
             progressBar.isEnabled = true
         }
-    }
-
-    private fun tryPlay(position: Int) {
-        mediaPlayer.stop()
-        setIcon()
-        try {
-            mediaPlayer.play(musicList[position].uri, speedVal)
-        }catch  (e: Exception) {
-            e.printStackTrace()
-            popUpAlert()
-        }
-        if (mediaPlayer.stateCheck(0)) {
-            popUpAlert()
-        }
-        setIcon()
-        handler.post({ checkPlayProgress() } )
     }
 
     private fun updateBar(progressBar: Slider, progress: Int, duration: Int) {
@@ -397,6 +340,21 @@ class PlayListActivity : AppCompatActivity() {
         handler.postDelayed({ updateBar(
             progressBar, mediaPlayer.getProgress(), mediaPlayer.getDuration()
         ) }, 100)
+    }
+
+    private fun setTransferData(
+        transferBundle: Bundle,
+        speed: Float,
+        color: Int,
+        continues: Boolean?,
+        position: Int?,
+        newSong: Boolean?
+    ) {
+        transferBundle.putFloat("Speed Values", speed)
+        transferBundle.putInt("Color Values", color)
+        if (continues != null) transferBundle.putBoolean("continuePlay", continues)
+        if (position != null) transferBundle.putInt("musicPosition", position)
+        if (newSong != null) transferBundle.putBoolean("newSong", newSong)
     }
 
     override fun onResume() {

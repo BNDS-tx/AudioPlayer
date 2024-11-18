@@ -19,7 +19,7 @@
     <string name="expection_alart">Player Error</string>
     <string name="continue_play">Automatically Play the Next File When the Current Ends</string>
     <string name="speed_play">Play Speed</string>
-    <string name="null_alart">No Supported File Found</string>
+    <string name="null_alart">No supported file found, please check if permission is allowed and then press the refresh button</string>
     <string name="background_theme">Background Color</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
@@ -29,4 +29,11 @@
     <string name="bookmark_yes">Yes</string>
     <string name="bookmark_no">No, Play from the start</string>
     <string name="playback_channel">Playback Control</string>
+    <string name="speed_1" translatable="false">1X</string>
+    <string name="speed_2" translatable="false">2X</string>
+    <string name="speed_3" translatable="false">3X</string>
+    <string name="speed_0.5" translatable="false">0.5X</string>
+    <string name="speed_1.5" translatable="false">1.5X</string>
+    <string name="speed_2.5" translatable="false">2.5X</string>
+    <string name="title_empty_fialure">Read Files Error</string>
 </resources>

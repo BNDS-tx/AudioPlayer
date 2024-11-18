@@ -16,7 +16,7 @@ class UIAdapter(private val activity: PlayActivity) {
         setIcon()
     }
 
-    fun setColor(colorVal: Int) {
+    private fun setColor(colorVal: Int) {
         val typedValue = TypedValue()
         activity.theme.resolveAttribute(com.google.android.material.R.attr.colorSurface,
             typedValue, true)
@@ -42,7 +42,7 @@ class UIAdapter(private val activity: PlayActivity) {
                 val isDarkMode = (activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                         Configuration.UI_MODE_NIGHT_YES
                 var albumDominantColor = extractDominantColor()
-                if (albumDominantColor == 0) {
+                if (activity.musicSize == 0 || albumDominantColor == 0) {
                     albumDominantColor = colorPrimary
                 }
                 activity.rootView.setBackgroundColor(albumDominantColor)
@@ -75,15 +75,17 @@ class UIAdapter(private val activity: PlayActivity) {
         ) }, 100)
     }
 
-    fun updateTitle() {
+    private fun updateTitle() {
         activity.setTitle(R.string.title_activity_player)
-        if (activity.musicPosition != -1) { activity.setTitle(activity.musicPlayer.getTitle()) }
-        activity.titleText.text = activity.title
+        if (activity.musicPosition != -1
+            && activity.musicPlayer.getProgress() > 0) {
+            activity.setTitle(activity.musicPlayer.getThisTitle()) }
+        if (activity.titleText.text != activity.title) activity.titleText.text = activity.title
     }
 
-    fun updateArt() {
+    private fun updateArt() {
         if (activity.musicPosition != -1) {
-            val albumArtBitmap = activity.musicPlayer.getAlbumArt()
+            val albumArtBitmap = activity.musicPlayer.getThisAlbumArt()
             activity.albumArt.setImageBitmap(albumArtBitmap)
         }
     }
@@ -95,10 +97,12 @@ class UIAdapter(private val activity: PlayActivity) {
             activity.playButton.setIconResource(R.drawable.ic_play_arrow_24px)
         }
         if (activity.musicPosition >= 0) {
-            if (activity.checkBookmark(activity.idList[activity.musicPosition])) {
+            if (activity.checkBookmark(activity.musicPlayer.getPositionId(activity.musicPosition))) {
                 activity.bookMarkButton.setIconResource(R.drawable.ic_bookmark_check_24px)
                 activity.bookMarkButton.text =
-                    activity.intToTime(activity.bookMarker[activity.idList[activity.musicPosition]]!!)
+                    activity.bookMarker[
+                        activity.musicPlayer.getPositionId(activity.musicPosition)
+                    ]?.let { activity.intToTime(it) }
             } else {
                 activity.bookMarkButton.setIconResource(R.drawable.ic_bookmark_add_24px)
                 activity.bookMarkButton.text = "--:--"
@@ -203,7 +207,7 @@ class UIAdapter(private val activity: PlayActivity) {
 
     private fun extractDominantColor(): Int {
         val defaultColor = 0
-        val albumArt = activity.musicPlayer.getAlbumArt()
+        val albumArt = activity.musicPlayer.getThisAlbumArt()
         return if (albumArt != null) {
             val palette = Palette.from(albumArt).generate()
             palette.getDominantColor(defaultColor)

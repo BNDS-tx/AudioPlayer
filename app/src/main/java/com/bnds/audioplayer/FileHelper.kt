@@ -13,14 +13,16 @@ class FileHelper {
         private val handlerThread = HandlerThread("FileHelperThread").apply { start() }
         private val backgroundHandler = Handler(handlerThread.looper)
 
-        fun getFilePathFromUri(context: Context, uri: Uri, callback: (String?) -> Unit) {
+        fun getFilePathFromUri(context: Context, uri: Uri, callback: (String?) -> Unit) {           // get file path from uri asynchronously
             backgroundHandler.post {
                 var filePath: String? = null
                 if ("content".equals(uri.scheme, ignoreCase = true)) {
                     val projection = arrayOf(MediaStore.Audio.Media.DATA)
-                    context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                    context.contentResolver.query(uri, projection,
+                        null, null, null)?.use { cursor ->
                         if (cursor.moveToFirst()) {
-                            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+                            val columnIndex =
+                                cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
                             filePath = cursor.getString(columnIndex)
                         }
                     }
@@ -28,19 +30,20 @@ class FileHelper {
                     filePath = uri.path
                 }
 
-                // Call the callback function on completion
-                callback(filePath)
+                callback(filePath)                                                                  // call the callback function on completion
             }
         }
 
-        fun getAlbumArt(filePath: String, callback: (Bitmap?) -> Unit) {
+        fun getAlbumArt(filePath: String, callback: (Bitmap?) -> Unit) {                            // get album art from file path asynchronously
             backgroundHandler.post {
                 val retriever = MediaMetadataRetriever()
                 val bitmap = try {
                     retriever.setDataSource(filePath)
                     val embeddedPicture = retriever.embeddedPicture
                     if (embeddedPicture != null) {
-                        BitmapFactory.decodeByteArray(embeddedPicture, 0, embeddedPicture.size)
+                        BitmapFactory.decodeByteArray(
+                            embeddedPicture, 0, embeddedPicture.size
+                        )
                     } else {
                         null
                     }
@@ -51,8 +54,7 @@ class FileHelper {
                     retriever.release()
                 }
 
-                // Call the callback function with the result
-                callback(bitmap)
+                callback(bitmap)                                                                    // call the callback function with the result
             }
         }
     }

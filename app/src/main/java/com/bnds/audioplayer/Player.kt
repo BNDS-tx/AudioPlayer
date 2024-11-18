@@ -12,17 +12,23 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import java.io.File
 
 class Player : Service() {
 
     private val binder = PlayerBinder()
-    var mediaPlayer = AudiobookPlayer()
+    private var mediaPlayer = AudiobookPlayer()
+    var activityContext: Context? =null
     private lateinit var mediaSession: MediaSessionCompat
     private val channelId = "com.bnds.audioplayer.channel"
+    private val handler = Handler(Looper.getMainLooper())
+    private var isHandled = false
+    private var oldDuration = 0
 
-    private var musicUri: Uri? = null
+    private var musicPosition: Int = -1
+    private lateinit var musicList: List<Music>
     private var playbackSpeed: Float = 1.0f
+    private var isContinue: Boolean = false
+    private var bookMarker: MutableMap<Long, Int> = mutableMapOf()
 
     inner class PlayerBinder : Binder() {
         fun getService(): Player = this@Player
@@ -34,6 +40,7 @@ class Player : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        musicList = Scanner(this).scanMusicFiles()
         Log.d("PlayerService", "Service created")
         initializeMediaSession()
         createNotificationChannel()
@@ -44,14 +51,17 @@ class Player : Service() {
             setCallback(object : MediaSessionCompat.Callback() {
                 override fun onPlay() {
                     super.onPlay()
-                    if (musicUri != null) {
+                    if (musicPosition != -1) {
                         if (stateCheck(3)) {
-                            musicUri?.let { play(it, playbackSpeed) }
+                            play(musicPosition, playbackSpeed)
                             updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                             updateNotification()
                         } else {
                             pauseAndResume()
-                            updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+                            if (stateCheck(1)) {
+                                updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+                            }
+                            else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                             updateNotification()
                         }
                     }
@@ -60,7 +70,8 @@ class Player : Service() {
                 override fun onPause() {
                     super.onPause()
                     pauseAndResume()
-                    updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+                    if (stateCheck(1)) updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+                    else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                     updateNotification()
                 }
 
@@ -76,9 +87,9 @@ class Player : Service() {
     }
 
     private fun updatePlaybackState(state: Int) {
-        val position = mediaPlayer.getProgress().toLong() // 当前播放进度
+        val position = mediaPlayer.getProgress().toLong()
         val playbackState = PlaybackStateCompat.Builder()
-            .setState(state, position, playbackSpeed) // 播放状态、进度、播放速度
+            .setState(state, position, playbackSpeed)
             .setActions(
                 PlaybackStateCompat.ACTION_PLAY or
                         PlaybackStateCompat.ACTION_PAUSE or
@@ -102,15 +113,16 @@ class Player : Service() {
         val isPlaying = stateCheck(1)
 
         val builder = NotificationCompat.Builder(this, channelId)
-            .setContentTitle(getTitle())
-            .setContentText(getArtist())
-            .setSmallIcon(R.drawable.ic_notificiation_foreground) // app icon for the service
+            .setContentTitle(getThisTitle())
+            .setContentText(getThisArtist())
+            .setSmallIcon(R.drawable.ic_notificiation_foreground)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(getContentIntent())
             .setOnlyAlertOnce(true)
             .addAction(
                 NotificationCompat.Action(
-                    if (!isPlaying) R.drawable.ic_play_arrow_24px else R.drawable.ic_pause_circle_24px, //
+                    if (!isPlaying) R.drawable.ic_play_arrow_24px
+                    else R.drawable.ic_pause_circle_24px,
                     "Pause&Play",
                     getPendingIntentForAction("PAUSE_PLAY_ACTION")
                 )
@@ -126,7 +138,7 @@ class Player : Service() {
                 false
             )
 
-        startForeground(1, builder.build()) // 确保 startForeground() 被调用
+        startForeground(1, builder.build())
     }
 
     private fun getPendingIntentForAction(action: String): PendingIntent {
@@ -146,7 +158,7 @@ class Player : Service() {
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         return PendingIntent.getActivity(
             this,
-            0, // 请求码，唯一标识
+            0,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -167,7 +179,7 @@ class Player : Service() {
             when (it) {
                 "TOGGLE_PLAY_PAUSE" -> {
                     if (mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.STOPPED) {
-                        musicUri?.let { uri -> play(uri, playbackSpeed) }
+                        play(musicPosition, playbackSpeed)
                     } else {
                         pauseAndResume()
                     }
@@ -181,16 +193,20 @@ class Player : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mediaPlayer.stop() // Ensure mediaPlayer is stopped
+        mediaPlayer.stop()
+        handler.removeCallbacksAndMessages(null)
         Log.d("PlayerService", "Service destroyed")
         mediaSession.release()
     }
+
+    fun setContext(context: Context) { activityContext = context }
 
     private fun uriToFilePath(context: Context, uri: Uri): String? {
         var filePath: String? = null
         if ("content".equals(uri.scheme, true)) {
             val projection = arrayOf(MediaStore.Audio.Media.DATA)
-            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+            context.contentResolver.query(uri, projection,
+                null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
                     filePath = cursor.getString(columnIndex)
@@ -202,72 +218,32 @@ class Player : Service() {
         return filePath
     }
 
-    fun play(uri: Uri, speed: Float) {
-        try {
-            if (stateCheck(3)) {
-                mediaPlayer.stop()
-            }
-            musicUri = uri
-            playbackSpeed = speed
-            mediaPlayer.apply {
-                load(uriToFilePath(applicationContext, uri), speed)
-            }
-            setPlaybackState()
-            updateNotification() // 添加这一行来更新通知
-        } catch (e: Exception) {
-            Log.e("PlayerService", "Error playing audio", e)
-        }
-    }
+    fun setMusicList(list: List<Music>) { this.musicList = list }
 
-    fun pauseAndResume() {
-        mediaPlayer.let {
-            if (stateCheck(1)) {
-                it.pause()
-            } else if (stateCheck(2)) {
-                it.play()
-            }
-        }
-        setPlaybackState()
-        updateNotification()
-    }
+    fun setContinues(continuePlay: Boolean) { this.isContinue = continuePlay }
 
-    fun stop() {
-        mediaPlayer.let {
-            if (mediaPlayer.getState() != AudiobookPlayer.AudiobookPlayerState.STOPPED) {
-                it.stop()
-            }
-        }
-        setPlaybackState()
-        updateNotification()
-    }
+    fun getMusicList(): List<Music> = musicList
 
-    fun getDuration(): Int = mediaPlayer.mediaPlayer?.duration ?: 1
+    fun getMusicSize(): Int = musicList.size
 
-    fun getProgress(): Int = mediaPlayer.getProgress()
+    fun getBookmark(): MutableMap<Long, Int> = bookMarker
 
-    fun getFilePath(): String = mediaPlayer.getFilePath()
+    fun getMusicPosition(music: Music): Int = musicList.indexOf(music)
 
-    fun getUri(): Uri? = musicUri
+    fun getPositionTitle(position: Int): String = musicList[position].title
 
-    fun seekTo(progress: Int) {
-        val oldState = mediaPlayer.getState()
-        mediaPlayer.skipTo(progress)
-        mediaPlayer.state = oldState
-        setPlaybackState()
-        updateNotification()
-    }
+    fun getPositionId(position: Int): Long = musicList[position].id
 
-    fun setSpeed(speed: Float) {
-        mediaPlayer.setPlaybackSpeed(speed)
-        setPlaybackState()
-        updateNotification()
-    }
+    fun getThisPosition(): Int = musicPosition
 
-    fun getAlbumArt(): Bitmap? {
-        val filePath = getFilePath()
+    fun getThisTitle(): String = musicList[musicPosition].title
+
+    private fun getThisArtist(): String = musicList[musicPosition].artist
+
+    fun getThisAlbumArt(): Bitmap? {
+        val filePath = getFilePath()?: return null
         val retriever = MediaMetadataRetriever()
         var art : Bitmap? = null
-
         try {
             retriever.setDataSource(filePath)
             val embeddedPicture = retriever.embeddedPicture
@@ -282,42 +258,124 @@ class Player : Service() {
         return art
     }
 
-    fun getTitle(): String {
-        val filePath = getFilePath()
-        val retriever = MediaMetadataRetriever()
-        var Title: String? = null
+    fun getDuration(): Int = mediaPlayer.mediaPlayer?.duration ?: 1
 
-        try {
-            retriever.setDataSource(filePath)
-            Title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
-        } catch (e: Exception) {
-            Log.e("PlayerService", "Error retrieving title", e)
-        } finally {
-            retriever.release()
+    fun getProgress(): Int = mediaPlayer.getProgress()
+
+    private fun getFilePath(): String? = mediaPlayer.getFilePath()
+
+    fun startPlaying(new: Boolean, position: Int, speed: Float) {
+        playbackSpeed = speed
+        if (new) {
+            if (!checkBookmark(musicList[position].id)) {
+                play(position, speed)
+            } else {
+                PopUpWindow(this).popupMarker(position, speed)
+            }
+        } else if (musicPosition == -1 && !stateCheck(1) && getProgress() == 0) {
+            if (musicList.isNotEmpty()) {
+                play(0, speed)
+                pauseAndResume()
+            } else {
+                PopUpWindow(this).popUpAlert(musicList.size)
+            }
         }
-        if (Title == null) {
-            Title = File(filePath).nameWithoutExtension
-        }
-        return Title
     }
 
-    fun getArtist(): String {
-        val filePath = getFilePath()
-        val retriever = MediaMetadataRetriever()
-        var artist: String? = null
-
+    fun play(position: Int, speed: Float) {
         try {
-            retriever.setDataSource(filePath)
-            artist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+            if (!stateCheck(3)) { mediaPlayer.stop() }
+            musicPosition = if (position == -1) 0
+            else position
+            val uri = musicList[musicPosition].uri
+            playbackSpeed = speed
+            mediaPlayer.apply {
+                load(uriToFilePath(applicationContext, uri), speed)
+            }
+            setPlaybackState()
+            updateNotification()
         } catch (e: Exception) {
-            Log.e("PlayerService", "Error retrieving artist", e)
-        } finally {
-            retriever.release()
+            Log.e("PlayerService", "Error playing audio", e)
+            PopUpWindow(this).popUpAlert(musicList.size)
         }
-        if (artist == null) {
-            artist = "Unknown Artist"
+        if (!isHandled) effectContinues(); isHandled = true
+    }
+
+    fun playNext() {
+        musicPosition = (musicPosition + 1) % musicList.size
+        if (!checkBookmark(musicList[musicPosition].id)) {
+            play(musicPosition, playbackSpeed)
+        } else {
+            PopUpWindow(this).popupMarker(musicPosition, playbackSpeed)
         }
-        return artist
+    }
+
+    fun playPrevious() {
+        musicPosition = (musicPosition - 1 + musicList.size) % musicList.size
+        if (!checkBookmark(musicList[musicPosition].id)) {
+            play(musicPosition, playbackSpeed)
+        } else {
+            PopUpWindow(this).popupMarker(musicPosition, playbackSpeed)
+        }
+    }
+
+    fun pauseAndResume() {
+        mediaPlayer.let {
+            if (stateCheck(1)) { it.pause() }
+            else if (stateCheck(2)) { it.play() }
+            else { play(musicPosition, playbackSpeed) }
+        }
+        setPlaybackState()
+        updateNotification()
+    }
+
+    fun stop() {
+        mediaPlayer.let {
+            if (!stateCheck(3)) { it.stop() }
+        }
+        setPlaybackState()
+        updateNotification()
+    }
+
+    fun seekTo(progress: Int) {
+        val oldState = mediaPlayer.getState()
+        mediaPlayer.pause()
+        mediaPlayer.skipTo(progress)
+        if (
+            oldState == AudiobookPlayer.AudiobookPlayerState.PLAYING
+        ) { mediaPlayer.pause(); mediaPlayer.play() }
+        else { mediaPlayer.play(); mediaPlayer.pause() }
+    }
+
+    fun setSpeed(speed: Float) {
+        mediaPlayer.setPlaybackSpeed(speed)
+        setPlaybackState()
+        updateNotification()
+    }
+
+    fun setBookmark() {
+        if (!checkBookmark(musicList[musicPosition].id)) {
+            bookMarker[musicList[musicPosition].id] = mediaPlayer.getProgress()
+        } else {
+            bookMarker[musicList[musicPosition].id] = 0
+        }
+    }
+
+    private fun effectContinues() {
+        if (checkComplete() && musicPosition != -1 ) {
+            handler.removeCallbacks { effectContinues() }
+            isHandled = false
+            oldDuration = getDuration()
+            handler.postDelayed({
+                if (!isContinue) { mediaPlayer.stop() }
+                else {
+                    playNext()
+                }
+            }, 1000 / playbackSpeed.toLong())
+        }
+        else {
+            handler.postDelayed({ effectContinues() }, 1100 / playbackSpeed.toLong())
+        }
     }
 
     fun stateCheck(type: Int) : Boolean {
@@ -337,9 +395,23 @@ class Player : Service() {
         }
     }
 
-    fun complete(): Boolean {
+    private fun checkBookmark(id: Long) : Boolean {
+        if (bookMarker.isEmpty()) {
+            return false
+        }
+        if (!bookMarker.containsKey(id)) {
+            return false
+        }
+        if (bookMarker[id] == 0) {
+            return false
+        }
+        return true
+    }
+
+    private fun checkComplete(): Boolean {
+        if (stateCheck(3) || stateCheck(0)) { return false }
         if (getProgress() < getDuration()) {
-            return getDuration() - getProgress() <= 900
+            return (getDuration() - getProgress() <= 1000) && getDuration() != oldDuration
         }
         return true
     }
