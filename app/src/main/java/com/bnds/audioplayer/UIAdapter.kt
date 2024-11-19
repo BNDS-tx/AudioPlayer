@@ -77,8 +77,7 @@ class UIAdapter(private val activity: PlayActivity) {
 
     private fun updateTitle() {
         activity.setTitle(R.string.title_activity_player)
-        if (activity.musicPosition != -1
-            && activity.musicPlayer.getProgress() > 0) {
+        if (activity.musicPosition != -1) {
             activity.setTitle(activity.musicPlayer.getThisTitle()) }
         if (activity.titleText.text != activity.title) activity.titleText.text = activity.title
     }

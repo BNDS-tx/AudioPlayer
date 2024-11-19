@@ -264,9 +264,11 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun checkPlayProgress() {
-        musicPosition = musicPlayer.getThisPosition()
-        bookMarker = musicPlayer.getBookmark()
-        UIAdapter(this).updateUIGroup(colorVal)
+        if (musicPosition != musicPlayer.getThisPosition()) {
+            musicPosition = musicPlayer.getThisPosition()
+            bookMarker = musicPlayer.getBookmark()
+            UIAdapter(this).updateUIGroup(colorVal)
+        }
         handler.postDelayed({ checkPlayProgress() }, 100)
     }
 
