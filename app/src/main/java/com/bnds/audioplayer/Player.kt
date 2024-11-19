@@ -339,12 +339,8 @@ class Player : Service() {
 
     fun seekTo(progress: Int) {
         val oldState = mediaPlayer.getState()
-        mediaPlayer.pause()
         mediaPlayer.skipTo(progress)
-        if (
-            oldState == AudiobookPlayer.AudiobookPlayerState.PLAYING
-        ) { mediaPlayer.pause(); mediaPlayer.play() }
-        else { mediaPlayer.play(); mediaPlayer.pause() }
+        mediaPlayer.state = oldState
     }
 
     fun setSpeed(speed: Float) {
@@ -368,9 +364,7 @@ class Player : Service() {
             oldDuration = getDuration()
             handler.postDelayed({
                 if (!isContinue) { mediaPlayer.stop() }
-                else {
-                    playNext()
-                }
+                else { playNext() }
             }, 1000 / playbackSpeed.toLong())
         }
         else {
@@ -408,7 +402,7 @@ class Player : Service() {
         return true
     }
 
-    private fun checkComplete(): Boolean {
+    fun checkComplete(): Boolean {
         if (stateCheck(3) || stateCheck(0)) { return false }
         if (getProgress() < getDuration()) {
             return (getDuration() - getProgress() <= 1000) && getDuration() != oldDuration

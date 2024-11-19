@@ -5,11 +5,41 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.util.TypedValue
 import android.view.WindowInsetsController
+import android.widget.ImageView
+import androidx.cardview.widget.CardView
 import androidx.palette.graphics.Palette
 import com.google.android.material.slider.Slider
 
 class UIAdapter(private val activity: PlayActivity) {
+    private var colorSurface: Int = 0
+    private var colorPrimary: Int = 0
+    private var colorPrimaryContainer: Int = 0
+    private var colorSurfaceInverse: Int = 0
+    private var colorOnPrimary: Int = 0
+    private var colorOnSurface: Int = 0
+    private var colorOnSurfaceInverse: Int = 0
+
+    private fun initColors(activity: PlayActivity) {
+        val typedValue = TypedValue()
+        val theme = activity.theme
+        theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true)
+        colorSurface = typedValue.data
+        theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
+        colorPrimary = typedValue.data
+        theme.resolveAttribute(com.google.android.material.R.attr.colorPrimaryContainer, typedValue, true)
+        colorPrimaryContainer = typedValue.data
+        theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceInverse, typedValue, true)
+        colorSurfaceInverse = typedValue.data
+        theme.resolveAttribute(com.google.android.material.R.attr.colorOnPrimary, typedValue, true)
+        colorOnPrimary = typedValue.data
+        theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
+        colorOnSurface = typedValue.data
+        theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceInverse, typedValue, true)
+        colorOnSurfaceInverse = typedValue.data
+    }
+
     fun updateUIGroup (colorVal: Int) {
+        initColors(activity)
         setColor(colorVal)
         updateTitle()
         updateArt()
@@ -17,22 +47,6 @@ class UIAdapter(private val activity: PlayActivity) {
     }
 
     private fun setColor(colorVal: Int) {
-        val typedValue = TypedValue()
-        activity.theme.resolveAttribute(com.google.android.material.R.attr.colorSurface,
-            typedValue, true)
-        val colorSurface = typedValue.data
-        activity.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary,
-            typedValue, true)
-        val colorPrimary = typedValue.data
-        activity.theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceInverse,
-            typedValue, true)
-        val colorSurfaceInverse = typedValue.data
-        activity.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface,
-            typedValue, true)
-        val colorOnSurface = typedValue.data
-        activity.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceInverse,
-            typedValue, true)
-        val colorOnSurfaceInverse = typedValue.data
         when (colorVal) {
             1 -> {
                 activity.rootView.setBackgroundColor(colorSurface)
@@ -43,10 +57,14 @@ class UIAdapter(private val activity: PlayActivity) {
                         Configuration.UI_MODE_NIGHT_YES
                 var albumDominantColor = extractDominantColor()
                 if (activity.musicSize == 0 || albumDominantColor == 0) {
-                    albumDominantColor = colorPrimary
+                    albumDominantColor = colorPrimaryContainer
                 }
                 activity.rootView.setBackgroundColor(albumDominantColor)
-                updateButtonColor(albumDominantColor)
+                if (albumDominantColor != colorPrimaryContainer) {
+                    updateButtonColor(albumDominantColor)
+                } else {
+                    updateButtonColor(colorPrimary)
+                }
                 updateBarColor(
                     lightenColor(albumDominantColor),
                     darkenColor(albumDominantColor)
@@ -96,7 +114,9 @@ class UIAdapter(private val activity: PlayActivity) {
             activity.playButton.setIconResource(R.drawable.ic_play_arrow_24px)
         }
         if (activity.musicPosition >= 0) {
-            if (activity.checkBookmark(activity.musicPlayer.getPositionId(activity.musicPosition))) {
+            if (activity.checkBookmark(
+                    activity.musicPlayer.getPositionId(activity.musicPosition)
+            )) {
                 activity.bookMarkButton.setIconResource(R.drawable.ic_bookmark_check_24px)
                 activity.bookMarkButton.text =
                     activity.bookMarker[
@@ -163,26 +183,30 @@ class UIAdapter(private val activity: PlayActivity) {
         }
     }
 
-    private fun updateButtonColor(color: Int) {
-        val typedValue = TypedValue()
-        activity.theme.resolveAttribute(com.google.android.material.R.attr.colorOnPrimary,
-            typedValue, true)
-        val iconColor: ColorStateList = if (checkLight(color) == 1) {
+    private fun updateButtonColor(setColor: Int) {
+        val color =ColorStateList.valueOf(setColor)
+        val iconColor = if (setColor == colorPrimary) {
+            ColorStateList.valueOf(colorOnPrimary)
+        } else if (checkLight(setColor) == 1) {
             ColorStateList.valueOf(activity.getColor(R.color.black))
         } else {
             ColorStateList.valueOf(activity.getColor(R.color.white))
         }
-        activity.backButton.backgroundTintList = ColorStateList.valueOf(color)
+        activity.findViewById<CardView>(R.id.albumCard)
+            .setCardBackgroundColor(colorPrimary)
+        activity.findViewById<ImageView>(R.id.cardIcon)
+            .setColorFilter(colorOnPrimary)
+        activity.backButton.backgroundTintList = color
         activity.backButton.iconTint = iconColor
         activity.backButton.setTextColor(iconColor)
-        activity.bookMarkButton.backgroundTintList = ColorStateList.valueOf(color)
+        activity.bookMarkButton.backgroundTintList = color
         activity.bookMarkButton.iconTint = iconColor
         activity.bookMarkButton.setTextColor(iconColor)
-        activity.playButton.backgroundTintList = ColorStateList.valueOf(color)
+        activity.playButton.backgroundTintList = color
         activity.playButton.iconTint = iconColor
-        activity.nextButton.backgroundTintList = ColorStateList.valueOf(color)
+        activity.nextButton.backgroundTintList = color
         activity.nextButton.iconTint = iconColor
-        activity.previousButton.backgroundTintList = ColorStateList.valueOf(color)
+        activity.previousButton.backgroundTintList = color
         activity.previousButton.iconTint = iconColor
     }
 

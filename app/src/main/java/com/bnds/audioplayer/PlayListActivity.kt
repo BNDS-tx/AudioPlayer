@@ -235,14 +235,14 @@ class PlayListActivity : AppCompatActivity() {
         }
         setIcon()
         musicPosition = mediaPlayer.getThisPosition()
-        handler.postDelayed({ checkPlayProgress() }, 100)
+        handler.postDelayed({ checkPlayProgress() }, (1000 / speedVal).toLong())
     }
 
     private fun checkSpeed(oldSpeed: Float, newSpeed: Float) {
         if (oldSpeed != newSpeed) {
             if (mediaPlayer.stateCheck(1)) {
                 mediaPlayer.setSpeed(newSpeed)
-            } else {
+            } else if (mediaPlayer.stateCheck(2)) {
                 mediaPlayer.setSpeed(newSpeed)
                 mediaPlayer.pauseAndResume()
             }
@@ -314,7 +314,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun setIcon() {
-        if (!mediaPlayer.stateCheck(1)) {
+        if (!mediaPlayer.stateCheck(1) && !mediaPlayer.checkComplete()) {
             playButton.setIconResource(R.drawable.ic_play_arrow_24px)
         } else {
             playButton.setIconResource(R.drawable.ic_pause_circle_24px)

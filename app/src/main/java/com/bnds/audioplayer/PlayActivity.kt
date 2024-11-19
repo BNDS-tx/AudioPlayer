@@ -268,6 +268,10 @@ open class PlayActivity : AppCompatActivity() {
             musicPosition = musicPlayer.getThisPosition()
             bookMarker = musicPlayer.getBookmark()
             UIAdapter(this).updateUIGroup(colorVal)
+        } else if (musicPlayer.checkComplete()) {
+            handler.postDelayed({
+                UIAdapter(this).updateUIGroup(colorVal)
+            }, (1000 / speedVal).toLong())
         }
         handler.postDelayed({ checkPlayProgress() }, 100)
     }
