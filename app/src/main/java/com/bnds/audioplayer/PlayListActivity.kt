@@ -5,7 +5,9 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -71,24 +73,9 @@ class PlayListActivity : AppCompatActivity() {
         binding = ActivityPlayListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        recyclerView = findViewById(R.id.playListRecyclerView)
-        refreshButton = findViewById(R.id.refreshButton)
-        toPlayButton = findViewById(R.id.jumpToPlayButton)
-        settingsButton = findViewById(R.id.settingsButton)
-        playButton = findViewById(R.id.playButton)
-        progressBar = findViewById(R.id.progressBar)
-
-        setTitle(R.string.title_activity_play_list)
+        initializeViews()
 
         val intent = Intent(this, Player::class.java)
-
-        if (hasPermissions()) {
-            startService(intent)
-            bindService(intent)
-        } else {
-            requestPermissions()
-        }
-
         activityResultLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result ->
@@ -107,9 +94,7 @@ class PlayListActivity : AppCompatActivity() {
                 }
                 checkSpeed(speedVal, speedSetting)
                 speedVal = speedSetting
-                refreshMusicList()
-                setButtonText(toPlayButton)
-                setIcon()
+                bindService(intent)
             }
         }
     }
@@ -250,21 +235,21 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun openPlayActivity(position: Int) {
-        val bookMarkerBundle = Bundle()
-        for ((id, marker) in mediaPlayer.getBookmark()) {
-            bookMarkerBundle.putInt(id.toString(), marker)
-        }
-        val transferData = Bundle()
-        setTransferData(
-            transferData,
-            speedVal,
-            colorVal,
-            null,
-            position,
-            false
-        )
         val intent = Intent(this, PlayActivity::class.java).apply(
             fun Intent.() {
+                val bookMarkerBundle = Bundle()
+                for ((id, marker) in mediaPlayer.getBookmark()) {
+                    bookMarkerBundle.putInt(id.toString(), marker)
+                }
+                val transferData = Bundle()
+                setTransferData(
+                    transferData,
+                    speedVal,
+                    colorVal,
+                    null,
+                    position,
+                    false
+                )
                 putExtras(transferData)
                 putExtra("valid", true)
             }
@@ -357,6 +342,37 @@ class PlayListActivity : AppCompatActivity() {
         if (newSong != null) transferBundle.putBoolean("newSong", newSong)
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        unbindService()
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            setContentView(R.layout.activity_play_list)
+        } else {
+            setContentView(R.layout.activity_play_list)
+        }
+        initializeViews()
+    }
+
+    private fun initializeViews() {
+        recyclerView = findViewById(R.id.playListRecyclerView)
+        refreshButton = findViewById(R.id.refreshButton)
+        toPlayButton = findViewById(R.id.jumpToPlayButton)
+        settingsButton = findViewById(R.id.settingsButton)
+        playButton = findViewById(R.id.playButton)
+        progressBar = findViewById(R.id.progressBar)
+
+        setTitle(R.string.title_activity_play_list)
+
+        val intent = Intent(this, Player::class.java)
+
+        if (hasPermissions()) {
+            startService(intent)
+            bindService(intent)
+        } else {
+            requestPermissions()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         val intent = Intent(this, Player::class.java)
@@ -365,11 +381,8 @@ class PlayListActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (isBound) {
-            unbindService(connection)
-            isBound = false
-        }
         val intent = Intent(this, Player::class.java)
+        unbindService()
         stopService(intent)
         handler.removeCallbacksAndMessages(null)
     }

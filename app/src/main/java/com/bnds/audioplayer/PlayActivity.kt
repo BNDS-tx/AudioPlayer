@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -61,48 +62,8 @@ open class PlayActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_play)
-        rootView = findViewById<View>(R.id.main).rootView
-        playButton = findViewById(R.id.playButton)
-        bookMarkButton = findViewById(R.id.bookmarkButton)
-        showSpeed = findViewById(R.id.speedShow)
-        speedSlower = findViewById(R.id.speedSlower)
-        speedFaster = findViewById(R.id.speedFaster)
-        progressBar = findViewById(R.id.progressBar)
-        nextButton = findViewById(R.id.playNextButton)
-        previousButton = findViewById(R.id.playPreviousButton)
-        backButton = findViewById(R.id.backButton)
-        titleText = findViewById(R.id.titleText)
-        albumArt = findViewById(R.id.albumArt)
 
-        titleText.isSelected = true
-
-        val intent : Intent = intent
-        if (intent.hasExtra("valid")) {                                                       // receive bundle data pack from PlayListActivity
-            val transferData = intent.extras
-            if (transferData != null) {                                                             // unpack the bundle data pack if it's valid
-                transferData.keySet()?.forEach { key ->
-                    when (key) {
-                        "Speed Values" -> speedVal = transferData.getFloat(key)
-                        "Color Values" -> colorVal = transferData.getInt(key)
-                        "musicPosition" -> musicPosition = transferData.getInt(key)
-                        "newSong" -> new = transferData.getBoolean(key)
-                    }
-                }
-            }
-        }
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->           // make the display view fitting the window
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-
-        bindService()                                                                               // bind service
-
-        onBackPressedDispatcher.addCallback(this) {                                          // force to transfer the data back to PlayListActivity
-            endActivity()
-        }
-
+        initializeViews()
     }
 
     private fun bindService() {
@@ -264,15 +225,16 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun checkPlayProgress() {
+        bookMarker = musicPlayer.getBookmark()
         if (musicPosition != musicPlayer.getThisPosition()) {
             musicPosition = musicPlayer.getThisPosition()
-            bookMarker = musicPlayer.getBookmark()
             UIAdapter(this).updateUIGroup(colorVal)
         } else if (musicPlayer.checkComplete()) {
             handler.postDelayed({
                 UIAdapter(this).updateUIGroup(colorVal)
             }, (1000 / speedVal).toLong())
         }
+        UIAdapter(this).setIcon()
         handler.postDelayed({ checkPlayProgress() }, 100)
     }
 
@@ -293,6 +255,62 @@ open class PlayActivity : AppCompatActivity() {
             3F -> showSpeed.setText(R.string.speed_3)
         }
     }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        unbindService()
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            setContentView(R.layout.activity_play)
+        } else {
+            setContentView(R.layout.activity_play)
+        }
+        initializeViews()
+    }
+
+    private fun initializeViews() {
+        rootView = findViewById<View>(R.id.main).rootView
+        playButton = findViewById(R.id.playButton)
+        bookMarkButton = findViewById(R.id.bookmarkButton)
+        showSpeed = findViewById(R.id.speedShow)
+        speedSlower = findViewById(R.id.speedSlower)
+        speedFaster = findViewById(R.id.speedFaster)
+        progressBar = findViewById(R.id.progressBar)
+        nextButton = findViewById(R.id.playNextButton)
+        previousButton = findViewById(R.id.playPreviousButton)
+        backButton = findViewById(R.id.backButton)
+        titleText = findViewById(R.id.titleText)
+        albumArt = findViewById(R.id.albumArt)
+
+        titleText.isSelected = true
+
+        val intent : Intent = intent
+        if (intent.hasExtra("valid")) {                                                       // receive bundle data pack from PlayListActivity
+            val transferData = intent.extras
+            if (transferData != null) {                                                             // unpack the bundle data pack if it's valid
+                transferData.keySet()?.forEach { key ->
+                    when (key) {
+                        "Speed Values" -> speedVal = transferData.getFloat(key)
+                        "Color Values" -> colorVal = transferData.getInt(key)
+                        "musicPosition" -> musicPosition = transferData.getInt(key)
+                        "newSong" -> new = transferData.getBoolean(key)
+                    }
+                }
+            }
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->           // make the display view fitting the window
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        bindService()                                                                               // bind service
+
+        onBackPressedDispatcher.addCallback(this) {                                          // force to transfer the data back to PlayListActivity
+            endActivity()
+        }
+    }
+
 
     override fun onResume() {
         super.onResume()

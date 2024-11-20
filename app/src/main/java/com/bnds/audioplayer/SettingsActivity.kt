@@ -54,54 +54,7 @@ class SettingsActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.settings_activity)
 
-        backButton = findViewById(R.id.backButton)
-        connectButton = findViewById(R.id.connectButton)
-        speedControl = findViewById(R.id.speedControl)
-        speedButton1 = findViewById(R.id.speedOption1)
-        speedButton2 = findViewById(R.id.speedOption2)
-        speedButton3 = findViewById(R.id.speedOption3)
-        colorControl = findViewById(R.id.colorControl)
-        colorButton1 = findViewById(R.id.colorOption1)
-        colorButton2 = findViewById(R.id.colorOption2)
-        colorButton3 = findViewById(R.id.colorOption3)
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-
-        val intent : Intent = intent
-        if (intent.hasExtra("valid")) {
-            val transferData = intent.extras
-            if (transferData != null) {
-                transferData.keySet()?.forEach { key ->
-                    when (key) {
-                        "Speed Values" -> speedVal = transferData.getFloat(key)
-                        "Color Values" -> colorVal = transferData.getInt(key)
-                        "continuePlay" -> isConnect = transferData.getBoolean(key)
-                    }
-                }
-            }
-        }
-
-        bindService()
-
-        backButton.setOnClickListener {
-            endActivity()
-        }
-
-        connectButton.isChecked = isConnect
-        connectButton.setOnCheckedChangeListener { _, isChecked ->
-            isConnect = isChecked
-        }
-
-        playBackSpeedControl()
-        backgroundColorControl()
-
-        onBackPressedDispatcher.addCallback(this) {
-            endActivity()
-        }
+        initializeViews()
     }
 
     private fun bindService() {
@@ -192,6 +145,68 @@ class SettingsActivity : AppCompatActivity() {
         intent2.putExtras(transferData)
         setResult(Activity.RESULT_OK, intent2)
         finish()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        unbindService()
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            setContentView(R.layout.settings_activity)
+        } else {
+            setContentView(R.layout.settings_activity)
+        }
+        initializeViews()
+    }
+
+    private fun initializeViews() {
+        backButton = findViewById(R.id.backButton)
+        connectButton = findViewById(R.id.connectButton)
+        speedControl = findViewById(R.id.speedControl)
+        speedButton1 = findViewById(R.id.speedOption1)
+        speedButton2 = findViewById(R.id.speedOption2)
+        speedButton3 = findViewById(R.id.speedOption3)
+        colorControl = findViewById(R.id.colorControl)
+        colorButton1 = findViewById(R.id.colorOption1)
+        colorButton2 = findViewById(R.id.colorOption2)
+        colorButton3 = findViewById(R.id.colorOption3)
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        val intent : Intent = intent
+        if (intent.hasExtra("valid")) {
+            val transferData = intent.extras
+            if (transferData != null) {
+                transferData.keySet()?.forEach { key ->
+                    when (key) {
+                        "Speed Values" -> speedVal = transferData.getFloat(key)
+                        "Color Values" -> colorVal = transferData.getInt(key)
+                        "continuePlay" -> isConnect = transferData.getBoolean(key)
+                    }
+                }
+            }
+        }
+
+        bindService()
+
+        backButton.setOnClickListener {
+            endActivity()
+        }
+
+        connectButton.isChecked = isConnect
+        connectButton.setOnCheckedChangeListener { _, isChecked ->
+            isConnect = isChecked
+        }
+
+        playBackSpeedControl()
+        backgroundColorControl()
+
+        onBackPressedDispatcher.addCallback(this) {
+            endActivity()
+        }
     }
 
     override fun onDestroy() {

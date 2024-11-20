@@ -54,99 +54,123 @@
         </LinearLayout>
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/speedControl"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="200dp"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintWidth_percent="0.8">
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/speedSlower"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:drawableEnd="@drawable/ic_fast_rewind_24px"/>
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/speedShow"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="match_parent"
-            android:gravity="center"/>
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/speedFaster"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:drawableStart="@drawable/ic_fast_forward_24px"/>
-
-    </LinearLayout>
-
-    <com.google.android.material.slider.Slider
-        android:id="@+id/progressBar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="150dp"
-        android:max="100"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintWidth_percent="0.8" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/playButton"
-        android:layout_width="85dp"
-        android:layout_height="85dp"
-        android:background="@drawable/button_circle"
-        app:iconSize="55dp"
-        android:padding="15dp"
+        android:layout_height="175dp"
         android:layout_marginBottom="50dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintWidth_percent="0.75"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/playPreviousButton"
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="65dp"
-        android:width="30pt"
-        android:height="15pt"
-        android:background="@drawable/button_circle"
-        app:icon="@drawable/ic_skip_previous_24px"
-        app:iconSize="35dp"
-        android:padding="23dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.15"
-        app:layout_constraintStart_toStartOf="parent" />
+        <LinearLayout
+            android:id="@+id/speedControl"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.875"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintWidth_percent="1"
+            app:layout_constraintVertical_bias="0">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/playNextButton"
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="65dp"
-        android:width="30pt"
-        android:height="15pt"
-        android:background="@drawable/button_circle"
-        app:icon="@drawable/ic_skip_next_24px"
-        app:iconSize="35dp"
-        android:padding="23dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.85"
-        app:layout_constraintStart_toStartOf="parent" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/speedSlower"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:drawableEnd="@drawable/ic_fast_rewind_24px"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/speedShow"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:gravity="center"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/speedFaster"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:drawableStart="@drawable/ic_fast_forward_24px"/>
+        </LinearLayout>
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/progressBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:max="100"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.875"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintWidth_percent="1"
+            app:layout_constraintVertical_bias="0.2"/>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintVertical_bias="1">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical|start">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/playPreviousButton"
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:width="30pt"
+                    android:height="15pt"
+                    android:background="@drawable/button_circle"
+                    app:icon="@drawable/ic_skip_previous_24px"
+                    app:iconSize="35dp"
+                    android:padding="23dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:gravity="center">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/playButton"
+                    android:layout_width="85dp"
+                    android:layout_height="85dp"
+                    android:background="@drawable/button_circle"
+                    app:iconSize="55dp"
+                    android:padding="15dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical|end">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/playNextButton"
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:width="30pt"
+                    android:height="15pt"
+                    android:background="@drawable/button_circle"
+                    app:icon="@drawable/ic_skip_next_24px"
+                    app:iconSize="35dp"
+                    android:padding="23dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.cardview.widget.CardView
         android:id="@+id/albumCard"
