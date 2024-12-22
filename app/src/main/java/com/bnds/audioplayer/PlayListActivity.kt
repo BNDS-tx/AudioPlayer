@@ -38,6 +38,7 @@ class PlayListActivity : AppCompatActivity() {
     private var continuePlay: Boolean = false
     private var musicPosition: Int = -1
     private val handler = Handler(Looper.getMainLooper())
+    private var isNewOpen = false
 
     private lateinit var mediaPlayer: Player
     private var isBound = false
@@ -69,6 +70,7 @@ class PlayListActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        isNewOpen = true
         enableEdgeToEdge()
         binding = ActivityPlayListBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -128,7 +130,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun handleMusicPlayback() {
-        refreshMusicList()
+        if (isNewOpen) { refreshMusicList() }
         mediaPlayer.setContext(this)
         mediaPlayer.setContinues(continuePlay)
 
@@ -211,6 +213,7 @@ class PlayListActivity : AppCompatActivity() {
             handler.removeCallbacksAndMessages(null)
             activityResultLauncher.launch(intent)
         }
+        isNewOpen = false
     }
 
     private fun checkPlayProgress() {
