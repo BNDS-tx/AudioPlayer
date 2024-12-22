@@ -27,6 +27,7 @@ class Player : Service() {
     private var musicPosition: Int = -1
     private lateinit var musicList: List<Music>
     private var playbackSpeed: Float = 1.0f
+    private var colorVal = 1
     private var isContinue: Boolean = false
     private var bookMarker: MutableMap<Long, Int> = mutableMapOf()
 
@@ -44,6 +45,10 @@ class Player : Service() {
         Log.d("PlayerService", "Service created")
         initializeMediaSession()
         createNotificationChannel()
+
+        handler.postDelayed({
+            updateNotification()
+        }, 1000)
     }
 
     private fun initializeMediaSession() {
@@ -81,22 +86,41 @@ class Player : Service() {
                     updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
                 }
 
+                override fun onSeekTo(pos: Long) {
+                    super.onSeekTo(pos)
+                    seekTo(pos.toInt())
+                    if (stateCheck(1)) {
+                        updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+                    }
+                    else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+                    updateNotification()
+                }
+
+                override fun onSkipToNext() {
+                    super.onSkipToNext()
+                    playNext()
+                }
+
+                override fun onSkipToPrevious() {
+                    super.onSkipToPrevious()
+                    playPrevious()
+                }
             })
             isActive = true // 激活 MediaSession
         }
     }
 
     private fun updatePlaybackState(state: Int) {
-        val position = mediaPlayer.getProgress().toLong()
         val playbackState = PlaybackStateCompat.Builder()
-            .setState(state, position, playbackSpeed)
+            .setState(state, getProgress().toLong(), playbackSpeed)
             .setActions(
                 PlaybackStateCompat.ACTION_PLAY or
                         PlaybackStateCompat.ACTION_PAUSE or
                         PlaybackStateCompat.ACTION_STOP or
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
                         PlaybackStateCompat.ACTION_SEEK_TO
-            ) // 支持的操作
-            .setState(state, getProgress().toLong(), playbackSpeed)
+            )
             .build()
 
         mediaSession.setPlaybackState(playbackState)
@@ -119,6 +143,14 @@ class Player : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(getContentIntent())
             .setOnlyAlertOnce(true)
+            .setLargeIcon(getThisAlbumArt())
+            .addAction(
+                NotificationCompat.Action(
+                    R.drawable.ic_skip_previous_24px,
+                    "Previous",
+                    getPendingIntentForAction("PLAY_PREVIOUS")
+                )
+            )
             .addAction(
                 NotificationCompat.Action(
                     if (!isPlaying) R.drawable.ic_play_arrow_24px
@@ -127,10 +159,17 @@ class Player : Service() {
                     getPendingIntentForAction("PAUSE_PLAY_ACTION")
                 )
             )
+            .addAction(
+                NotificationCompat.Action(
+                    R.drawable.ic_skip_next_24px,
+                    "Next",
+                    getPendingIntentForAction("PLAY_NEXT")
+                )
+            )
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setMediaSession(mediaSession.sessionToken)
-                    .setShowActionsInCompactView(0)
+                    .setShowActionsInCompactView(0, 1, 2)
             )
             .setProgress(
                 getDuration(),
@@ -154,7 +193,8 @@ class Player : Service() {
     }
 
     private fun getContentIntent(): PendingIntent {
-        val intent = Intent(this, PlayListActivity::class.java)
+        val intent = Intent(this, PlayActivity::class.java)
+        intent.putExtra("fromNotification", colorVal)
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         return PendingIntent.getActivity(
             this,

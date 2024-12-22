@@ -296,6 +296,8 @@ open class PlayActivity : AppCompatActivity() {
                     }
                 }
             }
+        } else if (intent.hasExtra("fromNotification")) {
+            colorVal = 2
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->           // make the display view fitting the window
