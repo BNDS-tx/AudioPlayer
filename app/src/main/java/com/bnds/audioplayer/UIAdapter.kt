@@ -38,47 +38,35 @@ class UIAdapter(private val activity: PlayActivity) {
         colorOnSurfaceInverse = typedValue.data
     }
 
-    fun updateUIGroup (colorVal: Int) {
+    fun updateUIGroup () {
         initColors(activity)
-        setColor(colorVal)
+        setColor()
         updateTitle()
         updateArt()
         setIcon()
     }
 
-    private fun setColor(colorVal: Int) {
-        when (colorVal) {
-            1 -> {
-                activity.rootView.setBackgroundColor(colorSurface)
-                updateTextColor(colorSurface, colorOnSurface, colorOnSurface)
-            }
-            2 -> {
-                val isDarkMode = (activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                        Configuration.UI_MODE_NIGHT_YES
-                var albumDominantColor = extractDominantColor()
-                if (activity.musicSize == 0 || albumDominantColor == 0) {
-                    albumDominantColor = colorPrimaryContainer
-                }
-                activity.rootView.setBackgroundColor(albumDominantColor)
-                if (albumDominantColor != colorPrimaryContainer) {
-                    updateButtonColor(albumDominantColor)
-                } else {
-                    updateButtonColor(colorPrimary)
-                }
-                updateBarColor(
-                    lightenColor(albumDominantColor),
-                    darkenColor(albumDominantColor)
-                )
-                if (isDarkMode) {
-                    updateTextColor(albumDominantColor, colorOnSurfaceInverse, colorOnSurface)
-                } else {
-                    updateTextColor(albumDominantColor, colorOnSurface, colorOnSurfaceInverse)
-                }
-            }
-            3 -> {
-                activity.rootView.setBackgroundColor(colorSurfaceInverse)
-                updateTextColor(colorSurfaceInverse, colorOnSurfaceInverse, colorOnSurfaceInverse)
-            }
+    private fun setColor() {
+        val isDarkMode = (activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+        var albumDominantColor = extractDominantColor()
+        if (activity.musicSize == 0 || albumDominantColor == 0) {
+            albumDominantColor = colorPrimaryContainer
+        }
+        activity.rootView.setBackgroundColor(albumDominantColor)
+        if (albumDominantColor != colorPrimaryContainer) {
+            updateButtonColor(albumDominantColor)
+        } else {
+            updateButtonColor(colorPrimaryContainer)
+        }
+        updateBarColor(
+            lightenColor(albumDominantColor),
+            darkenColor(albumDominantColor)
+        )
+        if (isDarkMode) {
+            updateTextColor(albumDominantColor, colorOnSurfaceInverse, colorOnSurface)
+        } else {
+            updateTextColor(albumDominantColor, colorOnSurface, colorOnSurfaceInverse)
         }
     }
 
@@ -185,8 +173,8 @@ class UIAdapter(private val activity: PlayActivity) {
 
     private fun updateButtonColor(setColor: Int) {
         val color =ColorStateList.valueOf(setColor)
-        val iconColor = if (setColor == colorPrimary) {
-            ColorStateList.valueOf(colorOnPrimary)
+        val iconColor = if (setColor == colorPrimaryContainer) {
+            ColorStateList.valueOf(colorPrimary)
         } else if (checkLight(setColor) == 1) {
             ColorStateList.valueOf(activity.getColor(R.color.black))
         } else {
@@ -196,9 +184,19 @@ class UIAdapter(private val activity: PlayActivity) {
             .setCardBackgroundColor(colorPrimary)
         activity.findViewById<ImageView>(R.id.cardIcon)
             .setColorFilter(colorOnPrimary)
-        activity.backButton.backgroundTintList = color
-        activity.backButton.iconTint = iconColor
-        activity.backButton.setTextColor(iconColor)
+        activity.backButton.backgroundTintList =
+            if (setColor == colorPrimaryContainer)
+                ColorStateList.valueOf(colorPrimary)
+            else color
+        activity.backButton.iconTint =
+            if (setColor == colorPrimaryContainer)
+                ColorStateList.valueOf(colorOnPrimary)
+            else iconColor
+        activity.backButton.setTextColor(
+            if (setColor == colorPrimaryContainer)
+                ColorStateList.valueOf(colorOnPrimary)
+            else iconColor
+        )
         activity.bookMarkButton.backgroundTintList = color
         activity.bookMarkButton.iconTint = iconColor
         activity.bookMarkButton.setTextColor(iconColor)

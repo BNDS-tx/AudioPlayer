@@ -178,7 +178,8 @@
             android:orientation="vertical"
             android:gravity="center"
             android:background="@drawable/card_background_1"
-            android:padding="0dp">
+            android:padding="0dp"
+            android:visibility="gone" >
 
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"

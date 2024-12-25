@@ -302,7 +302,7 @@ class Player : Service() {
 
     fun getProgress(): Int = mediaPlayer.getProgress()
 
-    private fun getFilePath(): String? = mediaPlayer.getFilePath()
+    fun getFilePath(): String? = mediaPlayer.getFilePath()
 
     fun startPlaying(new: Boolean, position: Int, speed: Float) {
         playbackSpeed = speed

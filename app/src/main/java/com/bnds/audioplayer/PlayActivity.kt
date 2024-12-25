@@ -23,7 +23,6 @@ import java.util.Locale
 
 open class PlayActivity : AppCompatActivity() {
     private var speedVal: Float = 1F
-    private var colorVal: Int = 1
     lateinit var musicPlayer: Player
     var musicSize: Int = 0
     var musicPosition: Int = -1
@@ -149,7 +148,7 @@ open class PlayActivity : AppCompatActivity() {
 
         checkPlayProgress()
         updateShowSpeed()
-        UIAdapter(this).updateUIGroup(colorVal)
+        UIAdapter(this).updateUIGroup()
     }
 
     private fun setUsability() {
@@ -198,7 +197,7 @@ open class PlayActivity : AppCompatActivity() {
         UIAdapter(this).setIcon()
         musicPosition = musicPlayer.getThisPosition()
         musicPlayer.pauseAndResume()
-        UIAdapter(this).updateUIGroup(colorVal)
+        UIAdapter(this).updateUIGroup()
     }
 
     private fun jumpAnotherSong(next: Boolean) {
@@ -208,14 +207,13 @@ open class PlayActivity : AppCompatActivity() {
             musicPlayer.playPrevious()
         }
         musicPosition = musicPlayer.getThisPosition()
-        UIAdapter(this).updateUIGroup(colorVal)
+        UIAdapter(this).updateUIGroup()
     }
 
     private fun endActivity() {
         val intent2 = Intent()
         val transferData = Bundle()
         transferData.putFloat("Speed Values", speedVal)
-        transferData.putInt("Color Values", colorVal)
         transferData.putInt("musicPosition", musicPosition)
         intent2.putExtras(transferData)
         setResult(RESULT_OK, intent2)
@@ -228,10 +226,10 @@ open class PlayActivity : AppCompatActivity() {
         bookMarker = musicPlayer.getBookmark()
         if (musicPosition != musicPlayer.getThisPosition()) {
             musicPosition = musicPlayer.getThisPosition()
-            UIAdapter(this).updateUIGroup(colorVal)
+            UIAdapter(this).updateUIGroup()
         } else if (musicPlayer.checkComplete()) {
             handler.postDelayed({
-                UIAdapter(this).updateUIGroup(colorVal)
+                UIAdapter(this).updateUIGroup()
             }, (1000 / speedVal).toLong())
         }
         UIAdapter(this).setIcon()
@@ -290,14 +288,11 @@ open class PlayActivity : AppCompatActivity() {
                 transferData.keySet()?.forEach { key ->
                     when (key) {
                         "Speed Values" -> speedVal = transferData.getFloat(key)
-                        "Color Values" -> colorVal = transferData.getInt(key)
                         "musicPosition" -> musicPosition = transferData.getInt(key)
                         "newSong" -> new = transferData.getBoolean(key)
                     }
                 }
             }
-        } else if (intent.hasExtra("fromNotification")) {
-            colorVal = 2
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->           // make the display view fitting the window

@@ -1,19 +1,23 @@
 package com.bnds.audioplayer
 
+import android.R.attr
 import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.TypedValue
 import android.widget.Button
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
@@ -34,7 +38,6 @@ class PlayListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlayListBinding
     private var musicSize = 0
     private var speedVal: Float = 1F
-    private var colorVal: Int = 1
     private var continuePlay: Boolean = false
     private var musicPosition: Int = -1
     private val handler = Handler(Looper.getMainLooper())
@@ -62,11 +65,13 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var refreshButton: FloatingActionButton
+    private lateinit var refreshButton: MaterialButton
     private lateinit var toPlayButton: MaterialButton
     private lateinit var settingsButton: MaterialButton
     private lateinit var playButton: MaterialButton
-    private lateinit var progressBar: Slider
+    private lateinit var playerButtonLayout: LinearLayout
+    private lateinit var playButtonImage: ImageView
+    private lateinit var skipNextButton: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,7 +93,6 @@ class PlayListActivity : AppCompatActivity() {
                     transferData.keySet()?.forEach { key ->
                         when (key) {
                             "Speed Values" -> speedSetting = transferData.getFloat(key)
-                            "Color Values" -> colorVal = transferData.getInt(key)
                             "continuePlay" -> continuePlay = transferData.getBoolean(key)
                             "musicPosition" -> musicPosition = transferData.getInt(key)
                         }
@@ -152,23 +156,20 @@ class PlayListActivity : AppCompatActivity() {
             playController(mediaPlayer)
         }
 
+        skipNextButton.setOnClickListener {
+            mediaPlayer.playNext()
+        }
+
         if (musicPosition == -1 && musicSize > 0) {                                                 // load the first file as default
             mediaPlayer.play(0, speedVal)
             mediaPlayer.pauseAndResume()
         }
 
-        updateBar(progressBar, mediaPlayer.getProgress(), mediaPlayer.getDuration())                // update the slider with progress
-        progressBar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
-            override fun onStartTrackingTouch(slider: Slider) {                                     // stand by when the tracker is being dragged till it is released
-            }
-            override fun onStopTrackingTouch(slider: Slider) {                                      // update progress when the tracker is released
-                val newProgress = slider.value.toInt()
-                mediaPlayer.seekTo(newProgress)
-            }
-        })
-
         setButtonText(toPlayButton)
         toPlayButton.setOnClickListener {
+            openPlayActivity(musicPosition)
+        }
+        playerButtonLayout.setOnClickListener {
             openPlayActivity(musicPosition)
         }
 
@@ -199,7 +200,7 @@ class PlayListActivity : AppCompatActivity() {
             setTransferData(
                 transferData,
                 speedVal,
-                colorVal, null,
+                null,
                 mediaPlayer.getMusicPosition(music),
                 true
             )
@@ -223,7 +224,7 @@ class PlayListActivity : AppCompatActivity() {
         }
         setIcon()
         musicPosition = mediaPlayer.getThisPosition()
-        handler.postDelayed({ checkPlayProgress() }, (1000 / speedVal).toLong())
+        handler.postDelayed({ checkPlayProgress() }, (100 / speedVal).toLong())
     }
 
     private fun checkSpeed(oldSpeed: Float, newSpeed: Float) {
@@ -248,7 +249,6 @@ class PlayListActivity : AppCompatActivity() {
                 setTransferData(
                     transferData,
                     speedVal,
-                    colorVal,
                     null,
                     position,
                     false
@@ -274,7 +274,6 @@ class PlayListActivity : AppCompatActivity() {
                 setTransferData(
                     transferData,
                     speedVal,
-                    colorVal,
                     continuePlay,
                     null, null
                 )
@@ -306,40 +305,38 @@ class PlayListActivity : AppCompatActivity() {
             playButton.setIconResource(R.drawable.ic_play_arrow_24px)
         } else {
             playButton.setIconResource(R.drawable.ic_pause_circle_24px)
+            FileHelper.getAlbumArt(mediaPlayer.getFilePath()!!) { bitmap ->                                        // update the album art after getting it asynchronously
+                playButtonImage.post {                                                          // update the UI on the main thread
+                    playButtonImage.setImageBitmap(bitmap)
+                    if (bitmap != null) playButton.setIconTintResource(R.color.white)
+                    else {
+                        val typedValue = TypedValue()
+                        theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
+                        val colorPrimary = typedValue.data
+                        playButton.setIconTint(ColorStateList.valueOf(colorPrimary))
+                    }
+
+                }
+            }
         }
     }
 
     private fun setUsability() {
         if (musicSize == 0) {
             playButton.isEnabled = false
-            progressBar.isEnabled = false
         } else {
             playButton.isEnabled = true
-            progressBar.isEnabled = true
         }
-    }
-
-    private fun updateBar(progressBar: Slider, progress: Int, duration: Int) {
-        if (progress <= duration && !mediaPlayer.stateCheck(0)
-            && duration != 0) {
-            progressBar.value = progress.toFloat()
-            progressBar.valueTo = duration.toFloat()
-        }
-        handler.postDelayed({ updateBar(
-            progressBar, mediaPlayer.getProgress(), mediaPlayer.getDuration()
-        ) }, 100)
     }
 
     private fun setTransferData(
         transferBundle: Bundle,
         speed: Float,
-        color: Int,
         continues: Boolean?,
         position: Int?,
         newSong: Boolean?
     ) {
         transferBundle.putFloat("Speed Values", speed)
-        transferBundle.putInt("Color Values", color)
         if (continues != null) transferBundle.putBoolean("continuePlay", continues)
         if (position != null) transferBundle.putInt("musicPosition", position)
         if (newSong != null) transferBundle.putBoolean("newSong", newSong)
@@ -353,6 +350,8 @@ class PlayListActivity : AppCompatActivity() {
         } else {
             setContentView(R.layout.activity_play_list)
         }
+        isNewOpen = true
+        bindService(Intent(this, Player::class.java))
         initializeViews()
     }
 
@@ -362,7 +361,9 @@ class PlayListActivity : AppCompatActivity() {
         toPlayButton = findViewById(R.id.jumpToPlayButton)
         settingsButton = findViewById(R.id.settingsButton)
         playButton = findViewById(R.id.playButton)
-        progressBar = findViewById(R.id.progressBar)
+        playerButtonLayout = findViewById(R.id.playButtonLayout)
+        playButtonImage = findViewById(R.id.playButtonImage)
+        skipNextButton = findViewById(R.id.skipToNextButton)
 
         setTitle(R.string.title_activity_play_list)
 
@@ -373,6 +374,10 @@ class PlayListActivity : AppCompatActivity() {
             bindService(intent)
         } else {
             requestPermissions()
+        }
+
+        playerButtonLayout.setOnClickListener {
+            // Do nothing
         }
     }
 

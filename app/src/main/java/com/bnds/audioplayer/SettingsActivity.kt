@@ -19,7 +19,6 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 
 class SettingsActivity : AppCompatActivity() {
     private var speedVal: Float = 1F
-    private var colorVal: Int = 1
     private var isConnect: Boolean = false
 
     private lateinit var player: Player
@@ -92,47 +91,6 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun backgroundColorControl() {
-        val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                Configuration.UI_MODE_NIGHT_YES
-        when (colorVal) {
-            1 -> {
-                if (isDarkMode) { colorControl.check(colorButton3.id) }
-                else { colorControl.check(colorButton1.id) }
-            }
-            2 -> colorControl.check(colorButton2.id)
-            3 -> {
-                if (isDarkMode) { colorControl.check(colorButton1.id) }
-                else { colorControl.check(colorButton3.id) }
-            }
-        }
-
-        colorControl.addOnButtonCheckedListener { group, checkedId, isChecked ->
-            if (isChecked) {
-                when (checkedId) {
-                    colorButton1.id -> {
-                        colorVal = if (!isDarkMode) {
-                            1
-                        } else {
-                            3
-                        }
-                    }
-                    colorButton2.id -> colorVal = 2
-                    colorButton3.id -> {
-                        colorVal = if (!isDarkMode) {
-                            3
-                        } else {
-                            1
-                        }
-                    }
-                }
-            }
-            if (group.checkedButtonId == View.NO_ID) {
-                group.check(checkedId)
-            }
-        }
-    }
-
     private fun moveContext() { player.setContext(this) }
 
     private fun endActivity() {
@@ -140,7 +98,6 @@ class SettingsActivity : AppCompatActivity() {
         val intent2 = Intent()
         val transferData = Bundle()
         transferData.putFloat("Speed Values", speedVal)
-        transferData.putInt("Color Values", colorVal)
         transferData.putBoolean("continuePlay", isConnect)
         intent2.putExtras(transferData)
         setResult(Activity.RESULT_OK, intent2)
@@ -183,7 +140,6 @@ class SettingsActivity : AppCompatActivity() {
                 transferData.keySet()?.forEach { key ->
                     when (key) {
                         "Speed Values" -> speedVal = transferData.getFloat(key)
-                        "Color Values" -> colorVal = transferData.getInt(key)
                         "continuePlay" -> isConnect = transferData.getBoolean(key)
                     }
                 }
@@ -202,7 +158,6 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         playBackSpeedControl()
-        backgroundColorControl()
 
         onBackPressedDispatcher.addCallback(this) {
             endActivity()
