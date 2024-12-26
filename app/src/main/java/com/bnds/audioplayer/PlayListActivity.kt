@@ -360,17 +360,14 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun setImage() {
-        FileHelper.getAlbumArt(mediaPlayerService.getFilePath()!!) { bitmap ->
-            playButtonImage.post {
-                playButtonImage.setImageBitmap(bitmap)
-                if (bitmap != null) playButton.setIconTintResource(R.color.white)
-                else {
-                    val typedValue = TypedValue()
-                    theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
-                    val colorPrimary = typedValue.data
-                    playButton.setIconTint(ColorStateList.valueOf(colorPrimary))
-                }
-            }
+        val bitmap = mediaPlayerService.getThisAlbumArt()
+        playButtonImage.setImageBitmap(bitmap)
+        if (bitmap != null) playButton.setIconTintResource(R.color.white)
+        else {
+            val typedValue = TypedValue()
+            theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
+            val colorPrimary = typedValue.data
+            playButton.setIconTint(ColorStateList.valueOf(colorPrimary))
         }
     }
 
