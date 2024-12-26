@@ -23,18 +23,18 @@ import java.util.Locale
 
 open class PlayActivity : AppCompatActivity() {
     private var speedVal: Float = 1F
-    lateinit var musicPlayer: Player
+    lateinit var musicPlayerService: PlayerService
     var musicSize: Int = 0
     var musicPosition: Int = -1
-    var bookMarker: MutableMap<Long, Int> = mutableMapOf()
+    var bookMarker: MutableMap<Long, Long> = mutableMapOf()
     private var new: Boolean = false
     val handler = Handler(Looper.getMainLooper())
 
     private var isBound = false
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val binder = service as Player.PlayerBinder
-            musicPlayer = binder.getService()
+            val binder = service as PlayerService.PlayerBinder
+            musicPlayerService = binder.getService()
             isBound = true
             handleMusicPlayback()
         }
@@ -67,7 +67,7 @@ open class PlayActivity : AppCompatActivity() {
 
     private fun bindService() {
         if (!isBound) {
-            val intent = Intent(this, Player::class.java)
+            val intent = Intent(this, PlayerService::class.java)
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
     }
@@ -80,12 +80,12 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun handleMusicPlayback() {
-        musicSize = musicPlayer.getMusicSize()
+        musicSize = musicPlayerService.getMusicSize()
         setUsability()
-        musicPlayer.setContext(this)
+        musicPlayerService.setContext(this)
 
-        musicPlayer.startPlaying(new, musicPosition, speedVal)
-        musicPosition = musicPlayer.getThisPosition()
+        musicPlayerService.startPlaying(new, musicPosition, speedVal)
+        musicPosition = musicPlayerService.getThisPosition()
 
         playButton.setOnClickListener {
             pauseOrContinue()
@@ -93,21 +93,21 @@ open class PlayActivity : AppCompatActivity() {
 
         bookMarkButton.setOnClickListener {
             if (musicPosition != -1) {
-                musicPlayer.setBookmark()
-                bookMarker = musicPlayer.getBookmark()
+                musicPlayerService.setBookmark()
+                bookMarker = musicPlayerService.getBookmark()
             }
             UIAdapter(this).setIcon()
         }
 
         UIAdapter(this).updateBar(                                                           // update the slider with progress
-            progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
+            progressBar, musicPlayerService.getProgress(), musicPlayerService.getDuration()
         )
         progressBar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
             override fun onStartTrackingTouch(slider: Slider) {                                     // stand by when the tracker is being dragged till it is released
             }
             override fun onStopTrackingTouch(slider: Slider) {                                      // update progress when the tracker is released
-                val newProgress = slider.value.toInt()
-                musicPlayer.seekTo(newProgress)
+                val newProgress = slider.value.toLong()
+                musicPlayerService.seekTo(newProgress)
             }
         })
 
@@ -131,14 +131,14 @@ open class PlayActivity : AppCompatActivity() {
         nextButton.setOnClickListener {
             jumpAnotherSong(true)
             UIAdapter(this).updateBar(
-                progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
+                progressBar, musicPlayerService.getProgress(), musicPlayerService.getDuration()
             )
         }
 
         previousButton.setOnClickListener {
             jumpAnotherSong(false)
             UIAdapter(this).updateBar(
-                progressBar, musicPlayer.getProgress(), musicPlayer.getDuration()
+                progressBar, musicPlayerService.getProgress(), musicPlayerService.getDuration()
             )
         }
 
@@ -172,11 +172,11 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun setPlaySpeed(speed: Float) {
-        if (musicPlayer.stateCheck(1)) {
-            musicPlayer.setSpeed(speed)
-        } else if (musicPlayer.stateCheck(2)) {
-            musicPlayer.setSpeed(speed)
-            musicPlayer.pauseAndResume()
+        if (musicPlayerService.stateCheck(1)) {
+            musicPlayerService.setSpeed(speed)
+        } else if (musicPlayerService.stateCheck(2)) {
+            musicPlayerService.setSpeed(speed)
+            musicPlayerService.pauseAndResume()
         }
     }
 
@@ -187,7 +187,7 @@ open class PlayActivity : AppCompatActivity() {
         if (!bookMarker.containsKey(id)) {
             return false
         }
-        if (bookMarker[id] == 0) {
+        if (bookMarker[id] == 0.toLong()) {
             return false
         }
         return true
@@ -195,18 +195,18 @@ open class PlayActivity : AppCompatActivity() {
 
     private fun pauseOrContinue() {
         UIAdapter(this).setIcon()
-        musicPosition = musicPlayer.getThisPosition()
-        musicPlayer.pauseAndResume()
+        musicPosition = musicPlayerService.getThisPosition()
+        musicPlayerService.pauseAndResume()
         UIAdapter(this).updateUIGroup()
     }
 
     private fun jumpAnotherSong(next: Boolean) {
         if (next) {
-            musicPlayer.playNext()
+            musicPlayerService.playNext()
         } else {
-            musicPlayer.playPrevious()
+            musicPlayerService.playPrevious()
         }
-        musicPosition = musicPlayer.getThisPosition()
+        musicPosition = musicPlayerService.getThisPosition()
         UIAdapter(this).updateUIGroup()
     }
 
@@ -223,20 +223,18 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun checkPlayProgress() {
-        bookMarker = musicPlayer.getBookmark()
-        if (musicPosition != musicPlayer.getThisPosition()) {
-            musicPosition = musicPlayer.getThisPosition()
+        bookMarker = musicPlayerService.getBookmark()
+        if (musicPosition != musicPlayerService.getThisPosition()) {
+            musicPosition = musicPlayerService.getThisPosition()
             UIAdapter(this).updateUIGroup()
-        } else if (musicPlayer.checkComplete()) {
-            handler.postDelayed({
-                UIAdapter(this).updateUIGroup()
-            }, (1000 / speedVal).toLong())
+        } else if (musicPlayerService.checkComplete()) {
+            UIAdapter(this).updateUIGroup()
         }
         UIAdapter(this).setIcon()
         handler.postDelayed({ checkPlayProgress() }, 100)
     }
 
-    fun intToTime(time: Int): String {
+    fun longToTime(time: Long): String {
         val seconds = time / 1000
         val minutes = seconds / 60
         val remainingSeconds = seconds % 60

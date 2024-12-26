@@ -12,11 +12,15 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 
-class Player : Service() {
+class PlayerService : Service() {
 
     private val binder = PlayerBinder()
-    private var mediaPlayer = AudiobookPlayer()
+    private var mediaPlayer: ExoPlayer? = null
     var activityContext: Context? =null
     private lateinit var mediaSession: MediaSessionCompat
     private val channelId = "com.bnds.audioplayer.channel"
@@ -24,15 +28,14 @@ class Player : Service() {
     private var isHandled = false
     private var oldDuration = 0
 
-    private var musicPosition: Int = -1
+    private var musicListPosition: Int = -1
     private lateinit var musicList: List<Music>
     private var playbackSpeed: Float = 1.0f
-    private var colorVal = 1
     private var isContinue: Boolean = false
-    private var bookMarker: MutableMap<Long, Int> = mutableMapOf()
+    private var bookMarker: MutableMap<Long, Long> = mutableMapOf()
 
     inner class PlayerBinder : Binder() {
-        fun getService(): Player = this@Player
+        fun getService(): PlayerService = this@PlayerService
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -41,6 +44,8 @@ class Player : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        mediaPlayer = ExoPlayer.Builder(this).build()
+        initializeListener()
         musicList = Scanner(this).scanMusicFiles()
         Log.d("PlayerService", "Service created")
         initializeMediaSession()
@@ -51,24 +56,66 @@ class Player : Service() {
         }, 1000)
     }
 
+    private fun initializeListener() {
+        mediaPlayer?.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                when (playbackState) {
+                    Player.STATE_IDLE -> {
+                        // 播放器为空闲状态
+                        println("Player is idle")
+                    }
+                    Player.STATE_BUFFERING -> {
+                        // 播放器正在缓冲
+                        println("Player is buffering")
+                    }
+                    Player.STATE_READY -> {
+                        // 播放器准备好，可以播放
+                        println("Player is ready")
+                    }
+                    Player.STATE_ENDED -> {
+                        // 播放完成
+                        println("Playback ended")
+                    }
+                }
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                // 捕获播放错误
+                PopUpWindow(this@PlayerService).popUpAlert(1)
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                // 播放状态切换
+                if (isPlaying) {
+                    updateNotification()
+                } else {
+                    updateNotification()
+                }
+            }
+        })
+    }
+
     private fun initializeMediaSession() {
         mediaSession = MediaSessionCompat(this, "PlayerMediaSession").apply {
             setCallback(object : MediaSessionCompat.Callback() {
                 override fun onPlay() {
                     super.onPlay()
-                    if (musicPosition != -1) {
+                    if (musicListPosition != -1) {
                         if (stateCheck(3)) {
-                            play(musicPosition, playbackSpeed)
+                            play(musicListPosition, playbackSpeed)
                             updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                             updateNotification()
                         } else {
                             pauseAndResume()
                             if (stateCheck(1)) {
                                 updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
-                            }
-                            else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+                            } else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                             updateNotification()
                         }
+                    } else {
+                        play(0, playbackSpeed)
+                        updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+                        updateNotification()
                     }
                 }
 
@@ -88,11 +135,10 @@ class Player : Service() {
 
                 override fun onSeekTo(pos: Long) {
                     super.onSeekTo(pos)
-                    seekTo(pos.toInt())
+                    seekTo(pos)
                     if (stateCheck(1)) {
                         updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
-                    }
-                    else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+                    } else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                     updateNotification()
                 }
 
@@ -194,7 +240,6 @@ class Player : Service() {
 
     private fun getContentIntent(): PendingIntent {
         val intent = Intent(this, PlayActivity::class.java)
-        intent.putExtra("fromNotification", colorVal)
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         return PendingIntent.getActivity(
             this,
@@ -218,11 +263,15 @@ class Player : Service() {
         intent?.action?.let {
             when (it) {
                 "TOGGLE_PLAY_PAUSE" -> {
-                    if (mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.STOPPED) {
-                        play(musicPosition, playbackSpeed)
+                    if (mediaPlayer?.isPlaying == false) {
+                        play(musicListPosition, playbackSpeed)
                     } else {
                         pauseAndResume()
                     }
+                } "PLAY_NEXT" -> {
+                    playNext()
+                } "PLAY_PREVIOUS" -> {
+                    playPrevious()
                 } else -> {
                     Log.d("PlayerService", "Unknown action: $it")
                 }
@@ -233,7 +282,7 @@ class Player : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mediaPlayer.stop()
+        mediaPlayer?.stop()
         handler.removeCallbacksAndMessages(null)
         Log.d("PlayerService", "Service destroyed")
         mediaSession.release()
@@ -266,7 +315,7 @@ class Player : Service() {
 
     fun getMusicSize(): Int = musicList.size
 
-    fun getBookmark(): MutableMap<Long, Int> = bookMarker
+    fun getBookmark(): MutableMap<Long, Long> = bookMarker
 
     fun getMusicPosition(music: Music): Int = musicList.indexOf(music)
 
@@ -274,11 +323,11 @@ class Player : Service() {
 
     fun getPositionId(position: Int): Long = musicList[position].id
 
-    fun getThisPosition(): Int = musicPosition
+    fun getThisPosition(): Int = musicListPosition
 
-    fun getThisTitle(): String = musicList[musicPosition].title
+    fun getThisTitle(): String = musicList[if (musicListPosition == -1) 0 else musicListPosition].title
 
-    private fun getThisArtist(): String = musicList[musicPosition].artist
+    private fun getThisArtist(): String = musicList[if (musicListPosition == -1) 0 else musicListPosition].artist
 
     fun getThisAlbumArt(): Bitmap? {
         val filePath = getFilePath()?: return null
@@ -298,11 +347,11 @@ class Player : Service() {
         return art
     }
 
-    fun getDuration(): Int = mediaPlayer.mediaPlayer?.duration ?: 1
+    fun getDuration(): Int = (mediaPlayer?.duration ?: 1).toInt()
 
-    fun getProgress(): Int = mediaPlayer.getProgress()
+    fun getProgress(): Int = mediaPlayer?.currentPosition?.toInt() ?: 0
 
-    fun getFilePath(): String? = mediaPlayer.getFilePath()
+    fun getFilePath(): String = uriToFilePath(this, musicList[if (musicListPosition == -1) 0 else musicListPosition].uri).toString()
 
     fun startPlaying(new: Boolean, position: Int, speed: Float) {
         playbackSpeed = speed
@@ -312,11 +361,8 @@ class Player : Service() {
             } else {
                 PopUpWindow(this).popupMarker(position, speed)
             }
-        } else if (musicPosition == -1 && !stateCheck(1) && getProgress() == 0) {
-            if (musicList.isNotEmpty()) {
-                play(0, speed)
-                pauseAndResume()
-            } else {
+        } else if (musicListPosition == -1) {
+            if (musicList.isEmpty()) {
                 PopUpWindow(this).popUpAlert(musicList.size)
             }
         }
@@ -324,13 +370,17 @@ class Player : Service() {
 
     fun play(position: Int, speed: Float) {
         try {
-            if (!stateCheck(3)) { mediaPlayer.stop() }
-            musicPosition = if (position == -1) 0
-            else position
-            val uri = musicList[musicPosition].uri
+            if (mediaPlayer?.isPlaying == true) { mediaPlayer?.stop() }
+            musicListPosition = if (position == -1) 0
+                else position
+            val uri = musicList[musicListPosition].uri
+            val bookMark = bookMarker[musicList[musicListPosition].id]
             playbackSpeed = speed
-            mediaPlayer.apply {
-                load(uriToFilePath(applicationContext, uri), speed)
+            mediaPlayer?.apply {
+                setMediaItem(MediaItem.fromUri(uri), bookMark?.toLong() ?: 0)
+                prepare()
+                setPlaybackSpeed(playbackSpeed)
+                play()
             }
             setPlaybackState()
             updateNotification()
@@ -342,70 +392,67 @@ class Player : Service() {
     }
 
     fun playNext() {
-        musicPosition = (musicPosition + 1) % musicList.size
-        if (!checkBookmark(musicList[musicPosition].id)) {
-            play(musicPosition, playbackSpeed)
+        musicListPosition = (musicListPosition + 1) % musicList.size
+        if (!checkBookmark(musicList[musicListPosition].id)) {
+            play(musicListPosition, playbackSpeed)
         } else {
-            PopUpWindow(this).popupMarker(musicPosition, playbackSpeed)
+            PopUpWindow(this).popupMarker(musicListPosition, playbackSpeed)
         }
     }
 
     fun playPrevious() {
-        musicPosition = (musicPosition - 1 + musicList.size) % musicList.size
-        if (!checkBookmark(musicList[musicPosition].id)) {
-            play(musicPosition, playbackSpeed)
+        musicListPosition = (musicListPosition - 1 + musicList.size) % musicList.size
+        if (!checkBookmark(musicList[musicListPosition].id)) {
+            play(musicListPosition, playbackSpeed)
         } else {
-            PopUpWindow(this).popupMarker(musicPosition, playbackSpeed)
+            PopUpWindow(this).popupMarker(musicListPosition, playbackSpeed)
         }
     }
 
     fun pauseAndResume() {
-        mediaPlayer.let {
+        mediaPlayer?.let {
             if (stateCheck(1)) { it.pause() }
             else if (stateCheck(2)) { it.play() }
-            else { play(musicPosition, playbackSpeed) }
+            else { play(musicListPosition, playbackSpeed) }
         }
         setPlaybackState()
         updateNotification()
     }
 
     fun stop() {
-        mediaPlayer.let {
+        mediaPlayer?.let {
             if (!stateCheck(3)) { it.stop() }
         }
         setPlaybackState()
         updateNotification()
     }
 
-    fun seekTo(progress: Int) {
-        val oldState = mediaPlayer.getState()
-        mediaPlayer.skipTo(progress)
-        mediaPlayer.state = oldState
+    fun seekTo(progress: Long) {
+        mediaPlayer?.seekTo(progress)
     }
 
     fun setSpeed(speed: Float) {
-        mediaPlayer.setPlaybackSpeed(speed)
+        mediaPlayer?.setPlaybackSpeed(speed)
         setPlaybackState()
         updateNotification()
     }
 
     fun setBookmark() {
-        if (!checkBookmark(musicList[musicPosition].id)) {
-            bookMarker[musicList[musicPosition].id] = mediaPlayer.getProgress()
+        if (!checkBookmark(musicList[musicListPosition].id)) {
+            bookMarker[musicList[musicListPosition].id] = mediaPlayer?.currentPosition as Long
         } else {
-            bookMarker[musicList[musicPosition].id] = 0
+            bookMarker[musicList[musicListPosition].id] = 0
         }
     }
 
     private fun effectContinues() {
-        if (checkComplete() && musicPosition != -1 ) {
+        if (checkComplete() && musicListPosition != -1 ) {
             handler.removeCallbacks { effectContinues() }
             isHandled = false
             oldDuration = getDuration()
-            handler.postDelayed({
-                if (!isContinue) { mediaPlayer.stop() }
-                else { playNext() }
-            }, 1000 / playbackSpeed.toLong())
+            if (!isContinue) { mediaPlayer?.stop() }
+            else { playNext() }
+
         }
         else {
             handler.postDelayed({ effectContinues() }, 1100 / playbackSpeed.toLong())
@@ -415,16 +462,19 @@ class Player : Service() {
     fun stateCheck(type: Int) : Boolean {
         return when (type) {
             1 -> {
-                mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.PLAYING
+                mediaPlayer?.isPlaying == true
             }
             2 -> {
-                mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.PAUSED
+                mediaPlayer?.playbackState == Player.STATE_READY
             }
             3 -> {
-                mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.STOPPED
+                mediaPlayer?.playbackState == Player.STATE_IDLE
+            }
+            4 -> {
+                mediaPlayer?.playbackState == Player.STATE_ENDED
             }
             else -> {
-                mediaPlayer.getState() == AudiobookPlayer.AudiobookPlayerState.ERROR
+                mediaPlayer?.playbackState == Player.STATE_BUFFERING
             }
         }
     }
@@ -436,17 +486,13 @@ class Player : Service() {
         if (!bookMarker.containsKey(id)) {
             return false
         }
-        if (bookMarker[id] == 0) {
+        if (bookMarker[id] == 0.toLong()) {
             return false
         }
         return true
     }
 
     fun checkComplete(): Boolean {
-        if (stateCheck(3) || stateCheck(0)) { return false }
-        if (getProgress() < getDuration()) {
-            return (getDuration() - getProgress() <= 1000) && getDuration() != oldDuration
-        }
-        return true
+        return mediaPlayer?.playbackState == Player.STATE_ENDED
     }
 }

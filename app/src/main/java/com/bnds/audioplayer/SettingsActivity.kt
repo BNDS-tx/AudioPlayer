@@ -21,12 +21,12 @@ class SettingsActivity : AppCompatActivity() {
     private var speedVal: Float = 1F
     private var isConnect: Boolean = false
 
-    private lateinit var player: Player
+    private lateinit var playerService: PlayerService
     private var isBound = false
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val binder = service as Player.PlayerBinder
-            player = binder.getService()
+            val binder = service as PlayerService.PlayerBinder
+            playerService = binder.getService()
             isBound = true
             moveContext()
         }
@@ -58,7 +58,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun bindService() {
         if (!isBound) {
-            val intent = Intent(this, Player::class.java)
+            val intent = Intent(this, PlayerService::class.java)
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
     }
@@ -91,7 +91,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun moveContext() { player.setContext(this) }
+    private fun moveContext() { playerService.setContext(this) }
 
     private fun endActivity() {
         unbindService()

@@ -18,12 +18,12 @@
             android:id="@+id/toolbar_layout"
             style="@style/Widget.MaterialComponents.Toolbar.Primary"
             android:layout_width="match_parent"
-            android:layout_height="150dp"
+            android:layout_height="165dp"
             android:fitsSystemWindows="true"
             android:title="@string/title_activity_play_list"
             app:contentScrim="?attr/colorPrimaryContainer"
             android:background="?attr/colorPrimaryContainer"
-            app:expandedTitleMarginBottom="40dp"
+            app:expandedTitleMarginBottom="30dp"
             app:expandedTitleMarginEnd="20dp"
             app:expandedTitleMarginStart="20dp"
             app:expandedTitleTextColor="?attr/colorOnPrimaryContainer"
@@ -47,10 +47,11 @@
     <include layout="@layout/content_scrolling" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
+        android:layout_width="420dp"
         android:layout_height="220dp"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="-50dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="-60dp"
+        android:layout_marginEnd="60dp"
         android:background="@drawable/button_page"
         android:backgroundTint="?attr/colorPrimaryContainer">
 

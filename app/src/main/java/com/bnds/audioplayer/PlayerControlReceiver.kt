@@ -8,7 +8,7 @@ import android.util.Log
 class PlayerControlReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
-        val serviceIntent = Intent(context, Player::class.java)
+        val serviceIntent = Intent(context, PlayerService::class.java)
         when (action) {
             "PAUSE_PLAY_ACTION" -> {
                 serviceIntent.action = "TOGGLE_PLAY_PAUSE"

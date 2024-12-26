@@ -2,21 +2,21 @@ package com.bnds.audioplayer
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-class PopUpWindow(private val player: Player) {
+class PopUpWindow(private val playerService: PlayerService) {
     fun popupMarker(musicPosition: Int, speed: Float) {
-        val builder = player.activityContext?.let { MaterialAlertDialogBuilder(it) }
+        val builder = playerService.activityContext?.let { MaterialAlertDialogBuilder(it) }
         builder?.setTitle(R.string.title_play_bookmark)
-        player.play(musicPosition, speed)
-        player.pauseAndResume()
+        playerService.play(musicPosition, speed)
+        playerService.pauseAndResume()
         builder?.setMessage(R.string.bookmark_nottification)
         builder?.setPositiveButton(R.string.bookmark_yes) { dialog, _ ->
-            player.play(musicPosition, speed)
-            player.seekTo(
-                player.getBookmark()[player.getPositionId(musicPosition)]!!)
+            playerService.play(musicPosition, speed)
+            playerService.seekTo(
+                playerService.getBookmark()[playerService.getPositionId(musicPosition)]!!)
             dialog.dismiss()
         }
         builder?.setNegativeButton(R.string.bookmark_no) { dialog, _ ->
-            player.play(musicPosition, speed)
+            playerService.play(musicPosition, speed)
             dialog.dismiss()
         }
         val dialog = builder?.create()
@@ -24,7 +24,7 @@ class PopUpWindow(private val player: Player) {
     }
 
     fun popUpAlert(size: Int) {
-        val builder = player.activityContext?.let { MaterialAlertDialogBuilder(it) }
+        val builder = playerService.activityContext?.let { MaterialAlertDialogBuilder(it) }
         if (size == 0) {
             builder?.setTitle(R.string.title_empty_fialure)
             builder?.setMessage(R.string.null_alart)

@@ -10,7 +10,7 @@ import java.util.Locale
 
 class MusicAdapter(
     private var musicList: List<Music>,
-    private var bookMarker: MutableMap<Long, Int>,
+    private var bookMarker: MutableMap<Long, Long>,
     private val onItemClick: (Music) -> Unit
 ) : RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
 
@@ -45,7 +45,7 @@ class MusicAdapter(
             holder.bookmark.setCompoundDrawablesRelativeWithIntrinsicBounds(
                 0, 0, R.drawable.ic_bookmark_added_24px, 0
             )
-            holder.bookmark.text = intToTime(bookMarker[music.id]!!)
+            holder.bookmark.text = longToTime(bookMarker[music.id]!!)
 
         }
 
@@ -67,13 +67,13 @@ class MusicAdapter(
         if (!bookMarker.containsKey(musicId)) {
             return false
         }
-        if (bookMarker[musicId] == 0) {
+        if (bookMarker[musicId] == 0.toLong()) {
             return false
         }
         return true
     }
 
-    private fun intToTime(time: Int): String {                                                      // convert the time to a string
+    private fun longToTime(time: Long): String {                                                      // convert the time to a string
         val seconds = time / 1000
         val minutes = seconds / 60
         val remainingSeconds = seconds % 60

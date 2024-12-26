@@ -71,45 +71,45 @@ class UIAdapter(private val activity: PlayActivity) {
     }
 
     fun updateBar(progressBar: Slider, progress: Int, duration: Int) {
-        if (progress <= duration && !activity.musicPlayer.stateCheck(0)
+        if (progress <= duration && !activity.musicPlayerService.stateCheck(0)
             && duration != 0) {
             progressBar.value = progress.toFloat()
             progressBar.valueTo = duration.toFloat()
         }
         activity.handler.postDelayed({ updateBar(
-            progressBar, activity.musicPlayer.getProgress(), activity.musicPlayer.getDuration()
+            progressBar, activity.musicPlayerService.getProgress(), activity.musicPlayerService.getDuration()
         ) }, 100)
     }
 
     private fun updateTitle() {
         activity.setTitle(R.string.title_activity_player)
         if (activity.musicPosition != -1) {
-            activity.setTitle(activity.musicPlayer.getThisTitle()) }
+            activity.setTitle(activity.musicPlayerService.getThisTitle()) }
         if (activity.titleText.text != activity.title) activity.titleText.text = activity.title
     }
 
     private fun updateArt() {
         if (activity.musicPosition != -1) {
-            val albumArtBitmap = activity.musicPlayer.getThisAlbumArt()
+            val albumArtBitmap = activity.musicPlayerService.getThisAlbumArt()
             activity.albumArt.setImageBitmap(albumArtBitmap)
         }
     }
 
     fun setIcon() {
-        if (activity.musicPlayer.stateCheck(1)) {
+        if (activity.musicPlayerService.stateCheck(1)) {
             activity.playButton.setIconResource(R.drawable.ic_pause_circle_24px)
         } else {
             activity.playButton.setIconResource(R.drawable.ic_play_arrow_24px)
         }
         if (activity.musicPosition >= 0) {
             if (activity.checkBookmark(
-                    activity.musicPlayer.getPositionId(activity.musicPosition)
+                    activity.musicPlayerService.getPositionId(activity.musicPosition)
             )) {
                 activity.bookMarkButton.setIconResource(R.drawable.ic_bookmark_check_24px)
                 activity.bookMarkButton.text =
                     activity.bookMarker[
-                        activity.musicPlayer.getPositionId(activity.musicPosition)
-                    ]?.let { activity.intToTime(it) }
+                        activity.musicPlayerService.getPositionId(activity.musicPosition)
+                    ]?.let { activity.longToTime(it) }
             } else {
                 activity.bookMarkButton.setIconResource(R.drawable.ic_bookmark_add_24px)
                 activity.bookMarkButton.text = "--:--"
@@ -228,7 +228,7 @@ class UIAdapter(private val activity: PlayActivity) {
 
     private fun extractDominantColor(): Int {
         val defaultColor = 0
-        val albumArt = activity.musicPlayer.getThisAlbumArt()
+        val albumArt = activity.musicPlayerService.getThisAlbumArt()
         return if (albumArt != null) {
             val palette = Palette.from(albumArt).generate()
             palette.getDominantColor(defaultColor)

@@ -1,6 +1,5 @@
 package com.bnds.audioplayer
 
-import android.R.attr
 import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
@@ -9,11 +8,13 @@ import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.provider.MediaStore
 import android.util.TypedValue
 import android.widget.Button
 import android.widget.ImageView
@@ -25,12 +26,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.slider.Slider
 
 class PlayListActivity : AppCompatActivity() {
 
@@ -42,13 +41,14 @@ class PlayListActivity : AppCompatActivity() {
     private var musicPosition: Int = -1
     private val handler = Handler(Looper.getMainLooper())
     private var isNewOpen = false
+    private var OpenFromFile: Uri? = null
 
-    private lateinit var mediaPlayer: Player
+    private lateinit var mediaPlayerService: PlayerService
     private var isBound = false
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val binder = service as Player.PlayerBinder
-            mediaPlayer = binder.getService()
+            val binder = service as PlayerService.PlayerBinder
+            mediaPlayerService = binder.getService()
             isBound = true
             handleMusicPlayback()
         }
@@ -80,9 +80,12 @@ class PlayListActivity : AppCompatActivity() {
         binding = ActivityPlayListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val audioUri: Uri? = intent.data
+        if (audioUri != null && isNewOpen) OpenFromFile = audioUri
+
         initializeViews()
 
-        val intent = Intent(this, Player::class.java)
+        val intent = Intent(this, PlayerService::class.java)
         activityResultLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result ->
@@ -105,18 +108,6 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
-    private fun hasPermissions(): Boolean {
-        return requiredReadPermissions.all { permission ->
-            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
-        }
-    }
-
-    private fun requestPermissions() {
-        ActivityCompat.requestPermissions(
-            this, requiredReadPermissions, 101
-        )
-    }
-
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -125,56 +116,39 @@ class PlayListActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 101) {
             if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                startService(Intent(this, Player::class.java))
-                bindService(Intent(this, Player::class.java)) // 如果权限授予，启动并绑定服务
+                startService(Intent(this, PlayerService::class.java))
+                bindService(Intent(this, PlayerService::class.java)) // 如果权限授予，启动并绑定服务
             } else {
                 Toast.makeText(this, "需要存储权限才能继续操作", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun handleMusicPlayback() {
-        if (isNewOpen) { refreshMusicList() }
-        mediaPlayer.setContext(this)
-        mediaPlayer.setContinues(continuePlay)
-
-        setSupportActionBar(findViewById(R.id.toolbar))
-        refreshButton.setOnClickListener {
-            refreshMusicList()
-            setUsability()
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        unbindService()
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            setContentView(R.layout.activity_play_list)
+        } else {
+            setContentView(R.layout.activity_play_list)
         }
+        isNewOpen = true
+        bindService(Intent(this, PlayerService::class.java))
+        initializeViews()
+    }
 
-        setUsability()
+    override fun onResume() {
+        super.onResume()
+        val intent = Intent(this, PlayerService::class.java)
+        if (isBound) setIcon() else bindService(intent)
+    }
 
-        mediaPlayer.startPlaying(false, musicPosition, speedVal)
-
-        settingsButton.setOnClickListener {
-            openSettingsActivity()
-        }
-
-        playButton.setOnClickListener {
-            playController(mediaPlayer)
-        }
-
-        skipNextButton.setOnClickListener {
-            mediaPlayer.playNext()
-        }
-
-        if (musicPosition == -1 && musicSize > 0) {                                                 // load the first file as default
-            mediaPlayer.play(0, speedVal)
-            mediaPlayer.pauseAndResume()
-        }
-
-        setButtonText(toPlayButton)
-        toPlayButton.setOnClickListener {
-            openPlayActivity(musicPosition)
-        }
-        playerButtonLayout.setOnClickListener {
-            openPlayActivity(musicPosition)
-        }
-
-        checkPlayProgress()
-        setIcon()
+    override fun onDestroy() {
+        super.onDestroy()
+        val intent = Intent(this, PlayerService::class.java)
+        unbindService()
+        stopService(intent)
+        handler.removeCallbacksAndMessages(null)
     }
 
     private fun bindService(thisIntent: Intent) {
@@ -190,51 +164,108 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
-    private fun refreshMusicList() {
-        mediaPlayer.setMusicList(Scanner(this).scanMusicFiles())
-        musicSize = mediaPlayer.getMusicSize()
-        val transferData = Bundle()
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = MusicAdapter(
-            mediaPlayer.getMusicList(), mediaPlayer.getBookmark()) { music ->
-            setTransferData(
-                transferData,
-                speedVal,
-                null,
-                mediaPlayer.getMusicPosition(music),
-                true
-            )
-            val intent : Intent = Intent(this, PlayActivity::class.java).apply(
-                fun Intent.() {
-                    putExtras(transferData)
-                    putExtra("valid", true)
-                }
-            )
-            unbindService()
-            handler.removeCallbacksAndMessages(null)
-            activityResultLauncher.launch(intent)
-        }
-        isNewOpen = false
-    }
-
     private fun checkPlayProgress() {
-        if (musicPosition != -1 && mediaPlayer.getProgress() > 0 &&
-            toPlayButton.text != mediaPlayer.getPositionTitle(musicPosition)) {
-            toPlayButton.text = mediaPlayer.getPositionTitle(musicPosition)
+        if (musicPosition != -1 && mediaPlayerService.getProgress() > 0 &&
+            toPlayButton.text != mediaPlayerService.getPositionTitle(musicPosition)) {
+            toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
         }
         setIcon()
-        musicPosition = mediaPlayer.getThisPosition()
+        musicPosition = mediaPlayerService.getThisPosition()
         handler.postDelayed({ checkPlayProgress() }, (100 / speedVal).toLong())
     }
 
     private fun checkSpeed(oldSpeed: Float, newSpeed: Float) {
         if (oldSpeed != newSpeed) {
-            if (mediaPlayer.stateCheck(1)) {
-                mediaPlayer.setSpeed(newSpeed)
-            } else if (mediaPlayer.stateCheck(2)) {
-                mediaPlayer.setSpeed(newSpeed)
-                mediaPlayer.pauseAndResume()
+            if (mediaPlayerService.stateCheck(1)) {
+                mediaPlayerService.setSpeed(newSpeed)
+            } else if (mediaPlayerService.stateCheck(2)) {
+                mediaPlayerService.setSpeed(newSpeed)
+                mediaPlayerService.pauseAndResume()
             }
+        }
+    }
+
+    fun getRealPathFromURI(uri: Uri): String? {
+        val projection = arrayOf(MediaStore.Audio.Media.DATA)
+        val cursor = contentResolver.query(uri, projection, null, null, null)
+        cursor?.let {
+            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+            cursor.moveToFirst()
+            val filePath = cursor.getString(columnIndex)
+            cursor.close()
+            return filePath
+        }
+        return null
+    }
+
+    private fun handleMusicPlayback() {
+        if (isNewOpen) { refreshMusicList() }
+        mediaPlayerService.setContext(this)
+        mediaPlayerService.setContinues(continuePlay)
+
+        setSupportActionBar(findViewById(R.id.toolbar))
+        refreshButton.setOnClickListener {
+            refreshMusicList()
+            setUsability()
+        }
+
+        setUsability()
+
+        mediaPlayerService.startPlaying(false, musicPosition, speedVal)
+
+        settingsButton.setOnClickListener {
+            openSettingsActivity()
+        }
+
+        playButton.setOnClickListener {
+            playController(mediaPlayerService)
+        }
+
+        skipNextButton.setOnClickListener {
+            mediaPlayerService.playNext()
+        }
+
+        setButtonText(toPlayButton)
+        toPlayButton.setOnClickListener {
+            openPlayActivity(musicPosition)
+        }
+        playerButtonLayout.setOnClickListener {
+            openPlayActivity(musicPosition)
+        }
+
+        checkPlayProgress()
+        setIcon()
+    }
+
+    private fun hasPermissions(): Boolean {
+        return requiredReadPermissions.all { permission ->
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun initializeViews() {
+        recyclerView = findViewById(R.id.playListRecyclerView)
+        refreshButton = findViewById(R.id.refreshButton)
+        toPlayButton = findViewById(R.id.jumpToPlayButton)
+        settingsButton = findViewById(R.id.settingsButton)
+        playButton = findViewById(R.id.playButton)
+        playerButtonLayout = findViewById(R.id.playButtonLayout)
+        playButtonImage = findViewById(R.id.playButtonImage)
+        skipNextButton = findViewById(R.id.skipToNextButton)
+
+        setTitle(R.string.title_activity_play_list)
+
+        val intent = Intent(this, PlayerService::class.java)
+
+        if (hasPermissions()) {
+            startService(intent)
+            bindService(intent)
+        } else {
+            requestPermissions()
+        }
+
+        playerButtonLayout.setOnClickListener {
+            // Do nothing
         }
     }
 
@@ -242,8 +273,8 @@ class PlayListActivity : AppCompatActivity() {
         val intent = Intent(this, PlayActivity::class.java).apply(
             fun Intent.() {
                 val bookMarkerBundle = Bundle()
-                for ((id, marker) in mediaPlayer.getBookmark()) {
-                    bookMarkerBundle.putInt(id.toString(), marker)
+                for ((id, marker) in mediaPlayerService.getBookmark()) {
+                    bookMarkerBundle.putLong(id.toString(), marker)
                 }
                 val transferData = Bundle()
                 setTransferData(
@@ -263,12 +294,35 @@ class PlayListActivity : AppCompatActivity() {
         activityResultLauncher.launch(intent)
     }
 
+    private fun onClick(music: Music) {
+        val transferData = Bundle()
+        val onClick = { music: Music ->
+            setTransferData(
+                transferData,
+                speedVal,
+                null,
+                mediaPlayerService.getMusicPosition(music),
+                true
+            )
+            val intent: Intent = Intent(this, PlayActivity::class.java).apply(
+                fun Intent.() {
+                    putExtras(transferData)
+                    putExtra("valid", true)
+                }
+            )
+            unbindService()
+            handler.removeCallbacksAndMessages(null)
+            activityResultLauncher.launch(intent)
+        }
+        onClick(music)
+    }
+
     private fun openSettingsActivity() {
         val intent: Intent = Intent(this, SettingsActivity::class.java).apply(
             fun Intent.() {
                 val bookMarkerBundle = Bundle()
-                for ((id, marker) in mediaPlayer.getBookmark()) {
-                    bookMarkerBundle.putInt(id.toString(), marker)
+                for ((id, marker) in mediaPlayerService.getBookmark()) {
+                    bookMarkerBundle.putLong(id.toString(), marker)
                 }
                 val transferData = Bundle()
                 setTransferData(
@@ -285,28 +339,70 @@ class PlayListActivity : AppCompatActivity() {
         activityResultLauncher.launch(intent)
     }
 
-    private fun playController(mediaPlayer: Player) {
+    private fun playController(mediaPlayerService: PlayerService) {
         setIcon()
-        mediaPlayer.pauseAndResume()
-        musicPosition = mediaPlayer.getThisPosition()
+        mediaPlayerService.pauseAndResume()
+        musicPosition = mediaPlayerService.getThisPosition()
         setIcon()
     }
 
+    private fun refreshMusicList() {
+        mediaPlayerService.setMusicList(Scanner(this).scanMusicFiles())
+        musicSize = mediaPlayerService.getMusicSize()
+        val transferData = Bundle()
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        recyclerView.layoutManager = GridLayoutManager(this, if (isLandscape) 2 else 1)
+        recyclerView.adapter = MusicAdapter(
+            mediaPlayerService.getMusicList(), mediaPlayerService.getBookmark()) { music ->
+            setTransferData(
+                transferData,
+                speedVal,
+                null,
+                mediaPlayerService.getMusicPosition(music),
+                true
+            )
+            val intent : Intent = Intent(this, PlayActivity::class.java).apply(
+                fun Intent.() {
+                    putExtras(transferData)
+                    putExtra("valid", true)
+                }
+            )
+            unbindService()
+            handler.removeCallbacksAndMessages(null)
+            activityResultLauncher.launch(intent)
+        }
+        if (OpenFromFile != null) {
+            for (music in mediaPlayerService.getMusicList()) {
+                if (getRealPathFromURI(music.uri) == getRealPathFromURI(OpenFromFile!!)) {
+                    onClick(music)
+                }
+            }
+        }
+        isNewOpen = false
+        OpenFromFile = null
+    }
+
+    private fun requestPermissions() {
+        ActivityCompat.requestPermissions(
+            this, requiredReadPermissions, 101
+        )
+    }
+
     private fun setButtonText(button: Button) {
-        if (musicPosition != -1 && mediaPlayer.getProgress() > 0) {
-            button.text = mediaPlayer.getPositionTitle(musicPosition)
+        if (musicPosition != -1 && mediaPlayerService.getProgress() > 0) {
+            button.text = mediaPlayerService.getPositionTitle(musicPosition)
         } else {
             button.text = getString(R.string.defualt_playing)
         }
     }
 
     private fun setIcon() {
-        if (!mediaPlayer.stateCheck(1) && !mediaPlayer.checkComplete()) {
+        if (!mediaPlayerService.stateCheck(1) && !mediaPlayerService.checkComplete()) {
             playButton.setIconResource(R.drawable.ic_play_arrow_24px)
         } else {
             playButton.setIconResource(R.drawable.ic_pause_circle_24px)
-            FileHelper.getAlbumArt(mediaPlayer.getFilePath()!!) { bitmap ->                                        // update the album art after getting it asynchronously
-                playButtonImage.post {                                                          // update the UI on the main thread
+            FileHelper.getAlbumArt(mediaPlayerService.getFilePath()) { bitmap ->
+                playButtonImage.post {
                     playButtonImage.setImageBitmap(bitmap)
                     if (bitmap != null) playButton.setIconTintResource(R.color.white)
                     else {
@@ -318,14 +414,6 @@ class PlayListActivity : AppCompatActivity() {
 
                 }
             }
-        }
-    }
-
-    private fun setUsability() {
-        if (musicSize == 0) {
-            playButton.isEnabled = false
-        } else {
-            playButton.isEnabled = true
         }
     }
 
@@ -342,56 +430,12 @@ class PlayListActivity : AppCompatActivity() {
         if (newSong != null) transferBundle.putBoolean("newSong", newSong)
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        unbindService()
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            setContentView(R.layout.activity_play_list)
+    private fun setUsability() {
+        if (musicSize == 0) {
+            playButton.isEnabled = false
         } else {
-            setContentView(R.layout.activity_play_list)
-        }
-        isNewOpen = true
-        bindService(Intent(this, Player::class.java))
-        initializeViews()
-    }
-
-    private fun initializeViews() {
-        recyclerView = findViewById(R.id.playListRecyclerView)
-        refreshButton = findViewById(R.id.refreshButton)
-        toPlayButton = findViewById(R.id.jumpToPlayButton)
-        settingsButton = findViewById(R.id.settingsButton)
-        playButton = findViewById(R.id.playButton)
-        playerButtonLayout = findViewById(R.id.playButtonLayout)
-        playButtonImage = findViewById(R.id.playButtonImage)
-        skipNextButton = findViewById(R.id.skipToNextButton)
-
-        setTitle(R.string.title_activity_play_list)
-
-        val intent = Intent(this, Player::class.java)
-
-        if (hasPermissions()) {
-            startService(intent)
-            bindService(intent)
-        } else {
-            requestPermissions()
-        }
-
-        playerButtonLayout.setOnClickListener {
-            // Do nothing
+            playButton.isEnabled = true
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        val intent = Intent(this, Player::class.java)
-        bindService(intent)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        val intent = Intent(this, Player::class.java)
-        unbindService()
-        stopService(intent)
-        handler.removeCallbacksAndMessages(null)
-    }
 }
