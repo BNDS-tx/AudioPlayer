@@ -44,6 +44,20 @@ class UIAdapter(private val activity: PlayActivity) {
         updateTitle()
         updateArt()
         setIcon()
+        updateBar(
+            activity.progressBar,
+            activity.musicPlayerService.getProgress(),
+            activity.musicPlayerService.getDuration()
+        )
+    }
+
+    fun updateUIIconAndBar () {
+        setIcon()
+        updateBar(
+            activity.progressBar,
+            activity.musicPlayerService.getProgress(),
+            activity.musicPlayerService.getDuration()
+        )
     }
 
     private fun setColor() {
@@ -76,9 +90,6 @@ class UIAdapter(private val activity: PlayActivity) {
             progressBar.value = progress.toFloat()
             progressBar.valueTo = duration.toFloat()
         }
-        activity.handler.postDelayed({ updateBar(
-            progressBar, activity.musicPlayerService.getProgress(), activity.musicPlayerService.getDuration()
-        ) }, 100)
     }
 
     private fun updateTitle() {
@@ -229,7 +240,7 @@ class UIAdapter(private val activity: PlayActivity) {
     private fun extractDominantColor(): Int {
         val defaultColor = 0
         val albumArt = activity.musicPlayerService.getThisAlbumArt()
-        return if (albumArt != null) {
+        return if (albumArt != null && activity.musicPosition != -1) {
             val palette = Palette.from(albumArt).generate()
             palette.getDominantColor(defaultColor)
         } else {

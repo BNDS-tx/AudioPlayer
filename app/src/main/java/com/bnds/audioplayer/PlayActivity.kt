@@ -5,10 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.provider.MediaStore
 import android.view.View
 import android.widget.ImageView
 import androidx.activity.addCallback
@@ -28,7 +30,8 @@ open class PlayActivity : AppCompatActivity() {
     var musicPosition: Int = -1
     var bookMarker: MutableMap<Long, Long> = mutableMapOf()
     private var new: Boolean = false
-    val handler = Handler(Looper.getMainLooper())
+    private var openFromFile: Uri? = null
+    private val handler = Handler(Looper.getMainLooper())
 
     private var isBound = false
     private val connection = object : ServiceConnection {
@@ -62,6 +65,9 @@ open class PlayActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_play)
 
+        val audioUri: Uri? = intent.data
+        if (audioUri != null) openFromFile = audioUri
+
         initializeViews()
     }
 
@@ -84,7 +90,17 @@ open class PlayActivity : AppCompatActivity() {
         setUsability()
         musicPlayerService.setContext(this)
 
-        musicPlayerService.startPlaying(new, musicPosition, speedVal)
+        if (openFromFile != null) {
+            for (music in musicPlayerService.getMusicList()) {
+                if (getRealPathFromURI(music.uri) == getRealPathFromURI(openFromFile!!)) {
+                    val position = musicPlayerService.getMusicPosition(music)
+                    musicPlayerService.startPlaying(true, position, speedVal)
+                    openFromFile = null
+                    break
+                }
+            }
+        } else musicPlayerService.startPlaying(new, musicPosition, speedVal)
+
         musicPosition = musicPlayerService.getThisPosition()
 
         playButton.setOnClickListener {
@@ -195,9 +211,14 @@ open class PlayActivity : AppCompatActivity() {
 
     private fun pauseOrContinue() {
         UIAdapter(this).setIcon()
-        musicPosition = musicPlayerService.getThisPosition()
-        musicPlayerService.pauseAndResume()
-        UIAdapter(this).updateUIGroup()
+        if (musicPosition != musicPlayerService.getThisPosition()) {
+            musicPosition = musicPlayerService.getThisPosition()
+            musicPlayerService.pauseAndResume()
+            UIAdapter(this).updateUIGroup()
+        } else {
+            musicPlayerService.pauseAndResume()
+            UIAdapter(this).updateUIIconAndBar()
+        }
     }
 
     private fun jumpAnotherSong(next: Boolean) {
@@ -227,10 +248,7 @@ open class PlayActivity : AppCompatActivity() {
         if (musicPosition != musicPlayerService.getThisPosition()) {
             musicPosition = musicPlayerService.getThisPosition()
             UIAdapter(this).updateUIGroup()
-        } else if (musicPlayerService.checkComplete()) {
-            UIAdapter(this).updateUIGroup()
-        }
-        UIAdapter(this).setIcon()
+        } else UIAdapter(this).updateUIIconAndBar()
         handler.postDelayed({ checkPlayProgress() }, 100)
     }
 
@@ -306,6 +324,18 @@ open class PlayActivity : AppCompatActivity() {
         }
     }
 
+    private fun getRealPathFromURI(uri: Uri): String? {
+        val projection = arrayOf(MediaStore.Audio.Media.DATA)
+        val cursor = contentResolver.query(uri, projection, null, null, null)
+        cursor?.let {
+            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+            cursor.moveToFirst()
+            val filePath = cursor.getString(columnIndex)
+            cursor.close()
+            return filePath
+        }
+        return null
+    }
 
     override fun onResume() {
         super.onResume()

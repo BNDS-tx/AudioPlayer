@@ -325,9 +325,13 @@ class PlayerService : Service() {
 
     fun getThisPosition(): Int = musicListPosition
 
-    fun getThisTitle(): String = musicList[if (musicListPosition == -1) 0 else musicListPosition].title
+    fun getThisTitle(): String =
+        if (musicList.isEmpty()) ""
+        else musicList[if (musicListPosition == -1) 0 else musicListPosition].title
 
-    private fun getThisArtist(): String = musicList[if (musicListPosition == -1) 0 else musicListPosition].artist
+    private fun getThisArtist(): String =
+        if (musicList.isEmpty()) ""
+        else musicList[if (musicListPosition == -1) 0 else musicListPosition].artist
 
     fun getThisAlbumArt(): Bitmap? {
         val filePath = getFilePath()?: return null
@@ -351,7 +355,9 @@ class PlayerService : Service() {
 
     fun getProgress(): Int = mediaPlayer?.currentPosition?.toInt() ?: 0
 
-    fun getFilePath(): String = uriToFilePath(this, musicList[if (musicListPosition == -1) 0 else musicListPosition].uri).toString()
+    fun getFilePath(): String? =
+        if (musicList.isEmpty()) null
+        else uriToFilePath(this, musicList[if (musicListPosition == -1) 0 else musicListPosition].uri).toString()
 
     fun startPlaying(new: Boolean, position: Int, speed: Float) {
         playbackSpeed = speed

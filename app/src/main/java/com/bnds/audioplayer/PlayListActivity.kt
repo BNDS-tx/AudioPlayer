@@ -1,20 +1,16 @@
 package com.bnds.audioplayer
 
-import android.app.Activity
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.content.res.Configuration
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.provider.MediaStore
 import android.util.TypedValue
 import android.widget.Button
 import android.widget.ImageView
@@ -41,7 +37,7 @@ class PlayListActivity : AppCompatActivity() {
     private var musicPosition: Int = -1
     private val handler = Handler(Looper.getMainLooper())
     private var isNewOpen = false
-    private var OpenFromFile: Uri? = null
+    private var isDirectionChanged = false
 
     private lateinit var mediaPlayerService: PlayerService
     private var isBound = false
@@ -80,30 +76,28 @@ class PlayListActivity : AppCompatActivity() {
         binding = ActivityPlayListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val audioUri: Uri? = intent.data
-        if (audioUri != null && isNewOpen) OpenFromFile = audioUri
-
         initializeViews()
 
-        val intent = Intent(this, PlayerService::class.java)
         activityResultLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result ->
-            if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            if (result.resultCode == RESULT_OK && result.data != null) {
                 var speedSetting = 1F
                 val transferData = result.data!!.extras
-                if (transferData != null) {
-                    transferData.keySet()?.forEach { key ->
-                        when (key) {
-                            "Speed Values" -> speedSetting = transferData.getFloat(key)
-                            "continuePlay" -> continuePlay = transferData.getBoolean(key)
-                            "musicPosition" -> musicPosition = transferData.getInt(key)
-                        }
+                transferData?.keySet()?.forEach { key ->
+                    when (key) {
+                        "Speed Values" -> speedSetting = transferData.getFloat(key)
+                        "continuePlay" -> continuePlay = transferData.getBoolean(key)
+                        "musicPosition" -> musicPosition = transferData.getInt(key)
                     }
                 }
                 checkSpeed(speedVal, speedSetting)
                 speedVal = speedSetting
-                bindService(intent)
+                if (hasPermissions()) {
+                    bindService(Intent(this, PlayerService::class.java))
+                } else {
+                    requestPermissions()
+                }
             }
         }
     }
@@ -133,6 +127,7 @@ class PlayListActivity : AppCompatActivity() {
             setContentView(R.layout.activity_play_list)
         }
         isNewOpen = true
+        isDirectionChanged = true
         bindService(Intent(this, PlayerService::class.java))
         initializeViews()
     }
@@ -153,7 +148,7 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun bindService(thisIntent: Intent) {
         if (!isBound) {
-            bindService(thisIntent, connection, Context.BIND_AUTO_CREATE)
+            bindService(thisIntent, connection, BIND_AUTO_CREATE)
         }
     }
 
@@ -169,33 +164,18 @@ class PlayListActivity : AppCompatActivity() {
             toPlayButton.text != mediaPlayerService.getPositionTitle(musicPosition)) {
             toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
         }
+        if (musicPosition != -1 && mediaPlayerService.getProgress() > 0 &&
+            musicPosition != mediaPlayerService.getThisPosition()) {
+            musicPosition = mediaPlayerService.getThisPosition()
+        }
         setIcon()
-        musicPosition = mediaPlayerService.getThisPosition()
         handler.postDelayed({ checkPlayProgress() }, (100 / speedVal).toLong())
     }
 
     private fun checkSpeed(oldSpeed: Float, newSpeed: Float) {
         if (oldSpeed != newSpeed) {
-            if (mediaPlayerService.stateCheck(1)) {
-                mediaPlayerService.setSpeed(newSpeed)
-            } else if (mediaPlayerService.stateCheck(2)) {
-                mediaPlayerService.setSpeed(newSpeed)
-                mediaPlayerService.pauseAndResume()
-            }
+            mediaPlayerService.setSpeed(newSpeed)
         }
-    }
-
-    fun getRealPathFromURI(uri: Uri): String? {
-        val projection = arrayOf(MediaStore.Audio.Media.DATA)
-        val cursor = contentResolver.query(uri, projection, null, null, null)
-        cursor?.let {
-            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-            cursor.moveToFirst()
-            val filePath = cursor.getString(columnIndex)
-            cursor.close()
-            return filePath
-        }
-        return null
     }
 
     private fun handleMusicPlayback() {
@@ -294,29 +274,6 @@ class PlayListActivity : AppCompatActivity() {
         activityResultLauncher.launch(intent)
     }
 
-    private fun onClick(music: Music) {
-        val transferData = Bundle()
-        val onClick = { music: Music ->
-            setTransferData(
-                transferData,
-                speedVal,
-                null,
-                mediaPlayerService.getMusicPosition(music),
-                true
-            )
-            val intent: Intent = Intent(this, PlayActivity::class.java).apply(
-                fun Intent.() {
-                    putExtras(transferData)
-                    putExtra("valid", true)
-                }
-            )
-            unbindService()
-            handler.removeCallbacksAndMessages(null)
-            activityResultLauncher.launch(intent)
-        }
-        onClick(music)
-    }
-
     private fun openSettingsActivity() {
         val intent: Intent = Intent(this, SettingsActivity::class.java).apply(
             fun Intent.() {
@@ -347,6 +304,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun refreshMusicList() {
+        if (!hasPermissions()) { requestPermissions(); return }
         mediaPlayerService.setMusicList(Scanner(this).scanMusicFiles())
         musicSize = mediaPlayerService.getMusicSize()
         val transferData = Bundle()
@@ -371,15 +329,7 @@ class PlayListActivity : AppCompatActivity() {
             handler.removeCallbacksAndMessages(null)
             activityResultLauncher.launch(intent)
         }
-        if (OpenFromFile != null) {
-            for (music in mediaPlayerService.getMusicList()) {
-                if (getRealPathFromURI(music.uri) == getRealPathFromURI(OpenFromFile!!)) {
-                    onClick(music)
-                }
-            }
-        }
         isNewOpen = false
-        OpenFromFile = null
     }
 
     private fun requestPermissions() {
@@ -397,21 +347,28 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun setIcon() {
-        if (!mediaPlayerService.stateCheck(1) && !mediaPlayerService.checkComplete()) {
+        if (!mediaPlayerService.stateCheck(1)) {
             playButton.setIconResource(R.drawable.ic_play_arrow_24px)
+            if (isDirectionChanged) setImage(); isDirectionChanged = false
+        } else if (mediaPlayerService.checkComplete()) {
+            playButton.setIconResource(R.drawable.ic_play_arrow_24px)
+            if (isDirectionChanged) setImage(); isDirectionChanged = false
         } else {
             playButton.setIconResource(R.drawable.ic_pause_circle_24px)
-            FileHelper.getAlbumArt(mediaPlayerService.getFilePath()) { bitmap ->
-                playButtonImage.post {
-                    playButtonImage.setImageBitmap(bitmap)
-                    if (bitmap != null) playButton.setIconTintResource(R.color.white)
-                    else {
-                        val typedValue = TypedValue()
-                        theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
-                        val colorPrimary = typedValue.data
-                        playButton.setIconTint(ColorStateList.valueOf(colorPrimary))
-                    }
+            setImage()
+        }
+    }
 
+    private fun setImage() {
+        FileHelper.getAlbumArt(mediaPlayerService.getFilePath()!!) { bitmap ->
+            playButtonImage.post {
+                playButtonImage.setImageBitmap(bitmap)
+                if (bitmap != null) playButton.setIconTintResource(R.color.white)
+                else {
+                    val typedValue = TypedValue()
+                    theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
+                    val colorPrimary = typedValue.data
+                    playButton.setIconTint(ColorStateList.valueOf(colorPrimary))
                 }
             }
         }
@@ -431,11 +388,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun setUsability() {
-        if (musicSize == 0) {
-            playButton.isEnabled = false
-        } else {
-            playButton.isEnabled = true
-        }
+        playButton.isEnabled = musicSize != 0
     }
 
 }

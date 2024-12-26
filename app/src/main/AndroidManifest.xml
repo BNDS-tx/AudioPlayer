@@ -24,8 +24,21 @@
         tools:targetApi="35" >
         <activity
             android:name=".PlayActivity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize" />
+            android:exported="true"
+            android:configChanges="orientation|screenSize" >
+            <intent-filter>
+                <!-- 处理音频文件类型 -->
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- 处理音频文件的 URI -->
+                <data android:scheme="content"/>
+                <data android:mimeType="audio/*"/>
+                <!-- 如果您希望支持本地文件，可以只使用 file:// 方案 -->
+                <data android:scheme="file"/>
+                <data android:mimeType="audio/*"/>
+            </intent-filter>
+        </activity>
         <activity
             android:name=".PlayListActivity"
             android:exported="true"
@@ -33,19 +46,7 @@
             android:configChanges="orientation|screenSize" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
-
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <!-- 处理音频文件类型 -->
-                <data android:scheme="content"/>
-                <data android:mimeType="audio/*"/>
-                <!-- 如果您也希望支持本地文件 -->
-                <data android:scheme="file"/>
-                <data android:mimeType="audio/*"/>
             </intent-filter>
         </activity>
         <activity
