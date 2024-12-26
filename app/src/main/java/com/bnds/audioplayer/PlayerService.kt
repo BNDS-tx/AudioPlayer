@@ -375,13 +375,13 @@ class PlayerService : Service() {
     }
 
     fun play(position: Int, speed: Float) {
+        if (mediaPlayer?.playbackState != Player.STATE_ENDED) { mediaPlayer?.stop() }
+        musicListPosition = if (position == -1) 0
+        else position
+        val uri = musicList[musicListPosition].uri
+        val bookMark = bookMarker[musicList[musicListPosition].id]
+        playbackSpeed = speed
         try {
-            if (mediaPlayer?.isPlaying == true) { mediaPlayer?.stop() }
-            musicListPosition = if (position == -1) 0
-                else position
-            val uri = musicList[musicListPosition].uri
-            val bookMark = bookMarker[musicList[musicListPosition].id]
-            playbackSpeed = speed
             mediaPlayer?.apply {
                 setMediaItem(MediaItem.fromUri(uri), bookMark?.toLong() ?: 0)
                 prepare()

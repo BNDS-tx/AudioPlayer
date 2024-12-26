@@ -28,13 +28,14 @@ class PopUpWindow(private val playerService: PlayerService) {
         if (size == 0) {
             builder?.setTitle(R.string.title_empty_fialure)
             builder?.setMessage(R.string.null_alart)
-            builder?.setNegativeButton(R.string.alart_button_sidmiss) { dialog, _ ->
+            builder?.setNegativeButton(R.string.alart_button_dismiss) { dialog, _ ->
                 dialog.dismiss()
             }
         } else {
             builder?.setTitle(R.string.title_play_failure)
             builder?.setMessage(R.string.expection_alart)
-            builder?.setPositiveButton(R.string.alart_button_sidmiss) { dialog, _ ->
+            builder?.setPositiveButton(R.string.alart_button_dismiss_continue) { dialog, _ ->
+                playerService.playNext()
                 dialog.dismiss()
             }
             builder?.setNegativeButton(R.string.jump_back) { dialog, _ ->

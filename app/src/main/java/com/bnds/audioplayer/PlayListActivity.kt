@@ -6,12 +6,14 @@ import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.content.res.Configuration
+import android.graphics.Paint
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.TypedValue
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -135,7 +137,7 @@ class PlayListActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         val intent = Intent(this, PlayerService::class.java)
-        if (isBound) setIcon() else bindService(intent)
+        if (isBound) { setIcon(); setImage() } else { bindService(intent) }
     }
 
     override fun onDestroy() {
@@ -161,14 +163,14 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun checkPlayProgress() {
         if (musicPosition != -1 && mediaPlayerService.getProgress() > 0 &&
-            toPlayButton.text != mediaPlayerService.getPositionTitle(musicPosition)) {
-            toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
-        }
-        if (musicPosition != -1 && mediaPlayerService.getProgress() > 0 &&
             musicPosition != mediaPlayerService.getThisPosition()) {
+            toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
             musicPosition = mediaPlayerService.getThisPosition()
+            setImage()
         }
+        if (isDirectionChanged) setImage(); isDirectionChanged = false
         setIcon()
+        setButtonText(toPlayButton)
         handler.postDelayed({ checkPlayProgress() }, (100 / speedVal).toLong())
     }
 
@@ -202,7 +204,7 @@ class PlayListActivity : AppCompatActivity() {
         }
 
         skipNextButton.setOnClickListener {
-            mediaPlayerService.playNext()
+            playNextController(mediaPlayerService)
         }
 
         setButtonText(toPlayButton)
@@ -215,6 +217,7 @@ class PlayListActivity : AppCompatActivity() {
 
         checkPlayProgress()
         setIcon()
+        setImage()
     }
 
     private fun hasPermissions(): Boolean {
@@ -297,10 +300,14 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun playController(mediaPlayerService: PlayerService) {
-        setIcon()
         mediaPlayerService.pauseAndResume()
         musicPosition = mediaPlayerService.getThisPosition()
         setIcon()
+        handler.postDelayed({ setImage() }, 100)
+    }
+
+    private fun playNextController(mediaPlayerService: PlayerService) {
+        mediaPlayerService.playNext()
     }
 
     private fun refreshMusicList() {
@@ -342,24 +349,23 @@ class PlayListActivity : AppCompatActivity() {
         if (musicPosition != -1 && mediaPlayerService.getProgress() > 0) {
             button.text = mediaPlayerService.getPositionTitle(musicPosition)
         } else {
-            button.text = getString(R.string.defualt_playing)
+            button.text = if (musicPosition == -1) getString(R.string.defualt_playing)
+                else "..."
         }
     }
 
     private fun setIcon() {
         if (!mediaPlayerService.stateCheck(1)) {
             playButton.setIconResource(R.drawable.ic_play_arrow_24px)
-            if (isDirectionChanged) setImage(); isDirectionChanged = false
         } else if (mediaPlayerService.checkComplete()) {
             playButton.setIconResource(R.drawable.ic_play_arrow_24px)
-            if (isDirectionChanged) setImage(); isDirectionChanged = false
         } else {
             playButton.setIconResource(R.drawable.ic_pause_circle_24px)
-            setImage()
         }
     }
 
     private fun setImage() {
+        if (musicPosition == -1) return
         val bitmap = mediaPlayerService.getThisAlbumArt()
         playButtonImage.setImageBitmap(bitmap)
         if (bitmap != null) playButton.setIconTintResource(R.color.white)

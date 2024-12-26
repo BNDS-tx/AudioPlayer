@@ -9,7 +9,7 @@
     <string name="title_activity_player">No Current Playing File</string>
     <string name="album_art">Album Art</string>
     <string name="title_play_failure">Play File Failed!</string>
-    <string name="alart_button_sidmiss">Dismiss</string>
+    <string name="alart_button_dismiss_continue">Dismiss and Continue</string>
     <string name="expection_alart">Player Error, Unable to Play This File</string>
     <string name="continue_play">Automatically Play the Next File When the Current Ends</string>
     <string name="speed_play">Play Speed</string>
@@ -25,4 +25,5 @@
     <string name="playback_channel">Playbcak Channel</string>
     <string name="title_empty_fialure">Read Files Error</string>
     <string name="unknown_artisit">Unknown Artist</string>
+    <string name="alart_button_dismiss">Dismiss</string>
 </resources>
