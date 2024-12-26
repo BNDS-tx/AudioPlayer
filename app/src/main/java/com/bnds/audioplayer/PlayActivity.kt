@@ -1,7 +1,6 @@
 package com.bnds.audioplayer
 
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.res.Configuration
@@ -74,7 +73,7 @@ open class PlayActivity : AppCompatActivity() {
     private fun bindService() {
         if (!isBound) {
             val intent = Intent(this, PlayerService::class.java)
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+            bindService(intent, connection, BIND_AUTO_CREATE)
         }
     }
 
@@ -300,13 +299,11 @@ open class PlayActivity : AppCompatActivity() {
         val intent : Intent = intent
         if (intent.hasExtra("valid")) {                                                       // receive bundle data pack from PlayListActivity
             val transferData = intent.extras
-            if (transferData != null) {                                                             // unpack the bundle data pack if it's valid
-                transferData.keySet()?.forEach { key ->
-                    when (key) {
-                        "Speed Values" -> speedVal = transferData.getFloat(key)
-                        "musicPosition" -> musicPosition = transferData.getInt(key)
-                        "newSong" -> new = transferData.getBoolean(key)
-                    }
+            transferData?.keySet()?.forEach { key ->
+                when (key) {
+                    "Speed Values" -> speedVal = transferData.getFloat(key)
+                    "musicPosition" -> musicPosition = transferData.getInt(key)
+                    "newSong" -> new = transferData.getBoolean(key)
                 }
             }
         }

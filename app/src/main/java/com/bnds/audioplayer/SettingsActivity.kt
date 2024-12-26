@@ -1,8 +1,6 @@
 package com.bnds.audioplayer
 
-import android.app.Activity
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.res.Configuration
@@ -59,7 +57,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun bindService() {
         if (!isBound) {
             val intent = Intent(this, PlayerService::class.java)
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+            bindService(intent, connection, BIND_AUTO_CREATE)
         }
     }
 
@@ -100,7 +98,7 @@ class SettingsActivity : AppCompatActivity() {
         transferData.putFloat("Speed Values", speedVal)
         transferData.putBoolean("continuePlay", isConnect)
         intent2.putExtras(transferData)
-        setResult(Activity.RESULT_OK, intent2)
+        setResult(RESULT_OK, intent2)
         finish()
     }
 
@@ -136,12 +134,10 @@ class SettingsActivity : AppCompatActivity() {
         val intent : Intent = intent
         if (intent.hasExtra("valid")) {
             val transferData = intent.extras
-            if (transferData != null) {
-                transferData.keySet()?.forEach { key ->
-                    when (key) {
-                        "Speed Values" -> speedVal = transferData.getFloat(key)
-                        "continuePlay" -> isConnect = transferData.getBoolean(key)
-                    }
+            transferData?.keySet()?.forEach { key ->
+                when (key) {
+                    "Speed Values" -> speedVal = transferData.getFloat(key)
+                    "continuePlay" -> isConnect = transferData.getBoolean(key)
                 }
             }
         }
