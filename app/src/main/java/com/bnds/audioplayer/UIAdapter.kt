@@ -84,9 +84,9 @@ class UIAdapter(private val activity: PlayActivity) {
         }
     }
 
-    fun updateBar(progressBar: Slider, progress: Int, duration: Int) {
+    fun updateBar(progressBar: Slider, progress: Long, duration: Long) {
         if (progress <= duration && !activity.musicPlayerService.stateCheck(0)
-            && duration != 0) {
+            && duration != 0.toLong()) {
             progressBar.value = progress.toFloat()
             progressBar.valueTo = duration.toFloat()
         }

@@ -48,7 +48,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="420dp"
-        android:layout_height="220dp"
+        android:layout_height="215dp"
         android:layout_gravity="bottom|end"
         android:layout_marginBottom="-60dp"
         android:layout_marginEnd="60dp"

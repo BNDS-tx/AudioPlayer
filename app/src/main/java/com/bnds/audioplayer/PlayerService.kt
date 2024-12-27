@@ -8,6 +8,7 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.*
 import android.provider.MediaStore
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
@@ -23,10 +24,9 @@ class PlayerService : Service() {
     private var mediaPlayer: ExoPlayer? = null
     var activityContext: Context? =null
     private lateinit var mediaSession: MediaSessionCompat
+    private lateinit var metadata: MediaMetadataCompat
     private val channelId = "com.bnds.audioplayer.channel"
     private val handler = Handler(Looper.getMainLooper())
-    private var isHandled = false
-    private var oldDuration = 0
 
     private var musicListPosition: Int = -1
     private lateinit var musicList: List<Music>
@@ -51,9 +51,9 @@ class PlayerService : Service() {
         initializeMediaSession()
         createNotificationChannel()
 
-        handler.postDelayed({
-            updateNotification()
-        }, 1000)
+        setPlaybackState()
+        updateNotification()
+        updateInformation()
     }
 
     private fun initializeListener() {
@@ -104,19 +104,17 @@ class PlayerService : Service() {
                         if (stateCheck(3)) {
                             play(musicListPosition, playbackSpeed)
                             updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
-                            updateNotification()
                         } else {
                             pauseAndResume()
                             if (stateCheck(1)) {
                                 updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                             } else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
-                            updateNotification()
                         }
                     } else {
                         play(0, playbackSpeed)
                         updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
-                        updateNotification()
                     }
+                    updateNotification()
                 }
 
                 override fun onPause() {
@@ -131,6 +129,7 @@ class PlayerService : Service() {
                     super.onStop()
                     stop()
                     updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
+                    updateNotification()
                 }
 
                 override fun onSeekTo(pos: Long) {
@@ -145,11 +144,19 @@ class PlayerService : Service() {
                 override fun onSkipToNext() {
                     super.onSkipToNext()
                     playNext()
+                    if (stateCheck(1)) {
+                        updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+                    } else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+                    updateNotification()
                 }
 
                 override fun onSkipToPrevious() {
                     super.onSkipToPrevious()
                     playPrevious()
+                    if (stateCheck(1)) {
+                        updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+                    } else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+                    updateNotification()
                 }
             })
             isActive = true // 激活 MediaSession
@@ -157,8 +164,9 @@ class PlayerService : Service() {
     }
 
     private fun updatePlaybackState(state: Int) {
+        val progress = getProgress()
         val playbackState = PlaybackStateCompat.Builder()
-            .setState(state, getProgress().toLong(), playbackSpeed)
+            .setState(state, progress, playbackSpeed, SystemClock.elapsedRealtime())
             .setActions(
                 PlaybackStateCompat.ACTION_PLAY or
                         PlaybackStateCompat.ACTION_PAUSE or
@@ -170,17 +178,26 @@ class PlayerService : Service() {
             .build()
 
         mediaSession.setPlaybackState(playbackState)
+
+        metadata = MediaMetadataCompat.Builder()
+            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration())
+            .build()
+
+        mediaSession.setMetadata(metadata)
     }
 
     private fun setPlaybackState() {
         if (stateCheck(1)) { updatePlaybackState(PlaybackStateCompat.STATE_PLAYING) }
         else if (stateCheck(2)) { updatePlaybackState(PlaybackStateCompat.STATE_PAUSED) }
-        else if (stateCheck(3)) { updatePlaybackState(PlaybackStateCompat.STATE_STOPPED) }
+        else if (stateCheck(3) || stateCheck(4)) { updatePlaybackState(PlaybackStateCompat.STATE_STOPPED) }
+        else if (stateCheck(5)) { updatePlaybackState(PlaybackStateCompat.STATE_BUFFERING) }
         else { updatePlaybackState(PlaybackStateCompat.STATE_ERROR) }
     }
 
     private fun updateNotification() {
         val isPlaying = stateCheck(1)
+        val duration = getDuration()
+        val progress = getProgress()
 
         val builder = NotificationCompat.Builder(this, channelId)
             .setContentTitle(getThisTitle())
@@ -218,8 +235,8 @@ class PlayerService : Service() {
                     .setShowActionsInCompactView(0, 1, 2)
             )
             .setProgress(
-                getDuration(),
-                getProgress(),
+                duration.toInt(),
+                progress.toInt(),
                 false
             )
 
@@ -351,9 +368,9 @@ class PlayerService : Service() {
         return art
     }
 
-    fun getDuration(): Int = (mediaPlayer?.duration ?: 1).toInt()
+    fun getDuration(): Long = mediaPlayer?.duration ?: 100000
 
-    fun getProgress(): Int = mediaPlayer?.currentPosition?.toInt() ?: 0
+    fun getProgress(): Long = mediaPlayer?.currentPosition ?: 0
 
     fun getFilePath(): String? =
         if (musicList.isEmpty()) null
@@ -388,13 +405,12 @@ class PlayerService : Service() {
                 setPlaybackSpeed(playbackSpeed)
                 play()
             }
-            setPlaybackState()
-            updateNotification()
         } catch (e: Exception) {
             Log.e("PlayerService", "Error playing audio", e)
             PopUpWindow(this).popUpAlert(musicList.size)
         }
-        if (!isHandled) effectContinues(); isHandled = true
+        setPlaybackState()
+        updateNotification()
     }
 
     fun playNext() {
@@ -404,6 +420,8 @@ class PlayerService : Service() {
         } else {
             PopUpWindow(this).popupMarker(musicListPosition, playbackSpeed)
         }
+        setPlaybackState()
+        updateNotification()
     }
 
     fun playPrevious() {
@@ -413,6 +431,8 @@ class PlayerService : Service() {
         } else {
             PopUpWindow(this).popupMarker(musicListPosition, playbackSpeed)
         }
+        setPlaybackState()
+        updateNotification()
     }
 
     fun pauseAndResume() {
@@ -435,6 +455,8 @@ class PlayerService : Service() {
 
     fun seekTo(progress: Long) {
         mediaPlayer?.seekTo(progress)
+        setPlaybackState()
+        updateNotification()
     }
 
     fun setSpeed(speed: Float) {
@@ -451,18 +473,15 @@ class PlayerService : Service() {
         }
     }
 
-    private fun effectContinues() {
+    private fun updateInformation() {
+        setPlaybackState()
+        updateNotification()
         if (checkComplete() && musicListPosition != -1 ) {
-            handler.removeCallbacks { effectContinues() }
-            isHandled = false
-            oldDuration = getDuration()
             if (!isContinue) { mediaPlayer?.stop() }
             else { playNext() }
+        }
+        handler.postDelayed({ updateInformation() }, 1000 / playbackSpeed.toLong())
 
-        }
-        else {
-            handler.postDelayed({ effectContinues() }, 1100 / playbackSpeed.toLong())
-        }
     }
 
     fun stateCheck(type: Int) : Boolean {
@@ -479,8 +498,11 @@ class PlayerService : Service() {
             4 -> {
                 mediaPlayer?.playbackState == Player.STATE_ENDED
             }
-            else -> {
+            5 -> {
                 mediaPlayer?.playbackState == Player.STATE_BUFFERING
+            }
+            else -> {
+                false
             }
         }
     }

@@ -346,6 +346,9 @@ class PlayListActivity : AppCompatActivity() {
     private fun setButtonText(button: Button) {
         if (musicPosition != -1 && mediaPlayerService.getProgress() > 0) {
             button.text = mediaPlayerService.getPositionTitle(musicPosition)
+        } else if (mediaPlayerService.stateCheck(1)) {
+            musicPosition = mediaPlayerService.getThisPosition()
+            button.text = mediaPlayerService.getPositionTitle(musicPosition)
         } else {
             button.text = if (musicPosition == -1) getString(R.string.defualt_playing)
                 else "..."
