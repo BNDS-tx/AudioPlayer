@@ -26,4 +26,5 @@
     <string name="title_empty_fialure">读取文件失败</string>
     <string name="unknown_artisit">未知作者</string>
     <string name="alart_button_dismiss">确认</string>
+    <string name="disInOrder_play">以随机顺序播放音乐</string>
 </resources>

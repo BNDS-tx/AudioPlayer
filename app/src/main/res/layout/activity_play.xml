@@ -58,7 +58,7 @@
         android:layout_width="0dp"
         android:layout_height="175dp"
         android:layout_marginBottom="50dp"
-        app:layout_constraintWidth_percent="0.75"
+        app:layout_constraintWidth_percent="0.85"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
@@ -100,27 +100,53 @@
                 android:drawableStart="@drawable/ic_fast_forward_24px"/>
         </LinearLayout>
 
-        <com.google.android.material.slider.Slider
-            android:id="@+id/progressBar"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:max="100"
+            android:orientation="horizontal"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.875"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintWidth_percent="1"
-            app:layout_constraintVertical_bias="0.2"/>
+            app:layout_constraintVertical_bias="0.2"
+            android:gravity="center_vertical">
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/progressBar"
+                android:layout_width="0dp"
+                android:layout_weight="10"
+                android:layout_height="wrap_content"
+                android:max="100"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.875"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintWidth_percent="1"
+                app:layout_constraintVertical_bias="0.4"/>
+
+            <ImageView
+                android:id="@+id/playMethodIcon"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                app:srcCompat="@drawable/ic_play_once_30px" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_height="wrap_content"
-            android:layout_width="match_parent"
-            android:gravity="center_vertical"
+            android:layout_width="wrap_content"
+            android:baselineAligned="false"
+            android:gravity="center"
             android:orientation="horizontal"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintVertical_bias="1">
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintVertical_bias="1"
+            app:layout_constraintHorizontal_bias="0.5">
 
             <LinearLayout
                 android:layout_width="0dp"

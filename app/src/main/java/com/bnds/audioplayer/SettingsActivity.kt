@@ -14,10 +14,12 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.materialswitch.MaterialSwitch
 
 class SettingsActivity : AppCompatActivity() {
     private var speedVal: Float = 1F
     private var isConnect: Boolean = false
+    private var isInOrderQueue: Boolean = true
 
     private lateinit var playerService: PlayerService
     private var isBound = false
@@ -35,7 +37,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private lateinit var backButton: MaterialButton
-    private lateinit var connectButton: com.google.android.material.materialswitch.MaterialSwitch
+    private lateinit var connectButton: MaterialSwitch
+    private lateinit var queueButton: MaterialSwitch
     private lateinit var speedControl: MaterialButtonToggleGroup
     private lateinit var speedButton1: MaterialButton
     private lateinit var speedButton2: MaterialButton
@@ -97,6 +100,7 @@ class SettingsActivity : AppCompatActivity() {
         val transferData = Bundle()
         transferData.putFloat("Speed Values", speedVal)
         transferData.putBoolean("continuePlay", isConnect)
+        transferData.putBoolean("isInOrderQueue", isInOrderQueue)
         intent2.putExtras(transferData)
         setResult(RESULT_OK, intent2)
         finish()
@@ -116,6 +120,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun initializeViews() {
         backButton = findViewById(R.id.backButton)
         connectButton = findViewById(R.id.connectButton)
+        queueButton = findViewById(R.id.queueButton)
         speedControl = findViewById(R.id.speedControl)
         speedButton1 = findViewById(R.id.speedOption1)
         speedButton2 = findViewById(R.id.speedOption2)
@@ -138,6 +143,7 @@ class SettingsActivity : AppCompatActivity() {
                 when (key) {
                     "Speed Values" -> speedVal = transferData.getFloat(key)
                     "continuePlay" -> isConnect = transferData.getBoolean(key)
+                    "isInOrderQueue" -> isInOrderQueue = transferData.getBoolean(key)
                 }
             }
         }
@@ -151,6 +157,11 @@ class SettingsActivity : AppCompatActivity() {
         connectButton.isChecked = isConnect
         connectButton.setOnCheckedChangeListener { _, isChecked ->
             isConnect = isChecked
+        }
+
+        queueButton.isChecked = !isInOrderQueue
+        queueButton.setOnCheckedChangeListener { _, isChecked ->
+            isInOrderQueue = !isChecked
         }
 
         playBackSpeedControl()

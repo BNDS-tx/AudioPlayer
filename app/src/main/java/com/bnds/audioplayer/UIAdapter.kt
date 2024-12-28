@@ -217,6 +217,8 @@ class UIAdapter(private val activity: PlayActivity) {
         activity.nextButton.iconTint = iconColor
         activity.previousButton.backgroundTintList = color
         activity.previousButton.iconTint = iconColor
+        activity.playMethodIcon.backgroundTintList = color
+        activity.playMethodIcon.imageTintList = iconColor
     }
 
     private fun updateBarColor(vibrantColor: Int, mutedColor: Int) {

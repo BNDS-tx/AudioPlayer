@@ -27,6 +27,9 @@ open class PlayActivity : AppCompatActivity() {
     lateinit var musicPlayerService: PlayerService
     var musicSize: Int = 0
     var musicPosition: Int = -1
+    private var continuePlay: Boolean = false
+    private var isInOrderQueue: Boolean = true
+    private var playMethodVal: Int = 0
     var bookMarker: MutableMap<Long, Long> = mutableMapOf()
     private var new: Boolean = false
     private var openFromFile: Uri? = null
@@ -53,6 +56,7 @@ open class PlayActivity : AppCompatActivity() {
     lateinit var speedSlower: MaterialTextView
     lateinit var speedFaster: MaterialTextView
     lateinit var progressBar: Slider
+    lateinit var playMethodIcon: ImageView
     lateinit var nextButton: MaterialButton
     lateinit var previousButton: MaterialButton
     lateinit var backButton: MaterialButton
@@ -125,6 +129,17 @@ open class PlayActivity : AppCompatActivity() {
                 musicPlayerService.seekTo(newProgress)
             }
         })
+
+        setMethodIcon(playMethodIcon)
+        playMethodIcon.setOnClickListener {
+            when (playMethodVal) {
+                0 -> playMethodVal = 1
+                1 -> playMethodVal = 2
+                2 -> playMethodVal = 3
+            }
+            setMethodIcon(playMethodIcon)
+            setMethod(playMethodVal)
+        }
 
         speedSlower.setOnClickListener {
             speedVal -= 0.5F
@@ -235,6 +250,8 @@ open class PlayActivity : AppCompatActivity() {
         val transferData = Bundle()
         transferData.putFloat("Speed Values", speedVal)
         transferData.putInt("musicPosition", musicPosition)
+        transferData.putBoolean("continuePlay", continuePlay)
+        transferData.putBoolean("isInOrderQueue", isInOrderQueue)
         intent2.putExtras(transferData)
         setResult(RESULT_OK, intent2)
         handler.removeCallbacksAndMessages(null)
@@ -288,6 +305,7 @@ open class PlayActivity : AppCompatActivity() {
         speedSlower = findViewById(R.id.speedSlower)
         speedFaster = findViewById(R.id.speedFaster)
         progressBar = findViewById(R.id.progressBar)
+        playMethodIcon = findViewById(R.id.playMethodIcon)
         nextButton = findViewById(R.id.playNextButton)
         previousButton = findViewById(R.id.playPreviousButton)
         backButton = findViewById(R.id.backButton)
@@ -303,10 +321,13 @@ open class PlayActivity : AppCompatActivity() {
                 when (key) {
                     "Speed Values" -> speedVal = transferData.getFloat(key)
                     "musicPosition" -> musicPosition = transferData.getInt(key)
+                    "continuePlay" -> continuePlay = transferData.getBoolean(key)
+                    "isInOrderQueue" -> isInOrderQueue = transferData.getBoolean(key)
                     "newSong" -> new = transferData.getBoolean(key)
                 }
             }
         }
+        setMethodVal(continuePlay, isInOrderQueue)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->           // make the display view fitting the window
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -332,6 +353,37 @@ open class PlayActivity : AppCompatActivity() {
             return filePath
         }
         return null
+    }
+
+    private fun setMethod(method: Int) {
+        if (method == 0) {
+            continuePlay = false
+            musicPlayerService.setContinues(continuePlay)
+        } else {
+            continuePlay = true
+            musicPlayerService.setContinues(continuePlay)
+        }
+        if (method == 2) {
+            isInOrderQueue = false
+            musicPlayerService.setInOrderQueue(isInOrderQueue)
+        } else {
+            isInOrderQueue = true
+            musicPlayerService.setInOrderQueue(isInOrderQueue)
+        }
+    }
+
+    private fun setMethodIcon(iconView: ImageView) {
+        when (playMethodVal) {
+            0 -> iconView.setImageResource(R.drawable.ic_play_once_30px)
+            1 -> iconView.setImageResource(R.drawable.ic_play_continuously_30px)
+            2 -> iconView.setImageResource(R.drawable.ic_play_randomly_30px)
+        }
+    }
+
+    private fun setMethodVal(continuePlay: Boolean, isInOrderQueue: Boolean) {
+        playMethodVal = if (continuePlay) {
+            if (isInOrderQueue) 1 else 2
+        } else 0
     }
 
     override fun onResume() {

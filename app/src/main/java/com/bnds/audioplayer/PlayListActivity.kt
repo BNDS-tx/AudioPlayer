@@ -34,6 +34,8 @@ class PlayListActivity : AppCompatActivity() {
     private var musicSize = 0
     private var speedVal: Float = 1F
     private var continuePlay: Boolean = false
+    private var isInOrderQueue: Boolean = true
+    private var playMethodVal: Int = 0
     private var musicPosition: Int = -1
     private val handler = Handler(Looper.getMainLooper())
     private var isNewOpen = false
@@ -68,6 +70,7 @@ class PlayListActivity : AppCompatActivity() {
     private lateinit var playerButtonLayout: LinearLayout
     private lateinit var playButtonImage: ImageView
     private lateinit var skipNextButton: MaterialButton
+    private lateinit var playMethodButton: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,6 +91,7 @@ class PlayListActivity : AppCompatActivity() {
                     when (key) {
                         "Speed Values" -> speedSetting = transferData.getFloat(key)
                         "continuePlay" -> continuePlay = transferData.getBoolean(key)
+                        "isInOrderQueue" -> isInOrderQueue = transferData.getBoolean(key)
                         "musicPosition" -> musicPosition = transferData.getInt(key)
                     }
                 }
@@ -160,10 +164,10 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun checkPlayProgress() {
-        if (musicPosition != -1 && mediaPlayerService.getProgress() > 0 &&
+        if ((musicPosition != -1 || !mediaPlayerService.stateCheck(1)) &&
             musicPosition != mediaPlayerService.getThisPosition()) {
-            toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
             musicPosition = mediaPlayerService.getThisPosition()
+            toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
             setImage()
         }
         if (isDirectionChanged) setImage(); isDirectionChanged = false
@@ -182,6 +186,8 @@ class PlayListActivity : AppCompatActivity() {
         if (isNewOpen) { refreshMusicList() }
         mediaPlayerService.setContext(this)
         mediaPlayerService.setContinues(continuePlay)
+        mediaPlayerService.setInOrderQueue(isInOrderQueue)
+        setMethodVal(continuePlay, isInOrderQueue)
 
         setSupportActionBar(findViewById(R.id.toolbar))
         refreshButton.setOnClickListener {
@@ -205,10 +211,22 @@ class PlayListActivity : AppCompatActivity() {
             playNextController(mediaPlayerService)
         }
 
+        setMethodIcon(playMethodButton)
+        playMethodButton.setOnClickListener {
+            when (playMethodVal) {
+                0 -> playMethodVal = 1
+                1 -> playMethodVal = 2
+                2 -> playMethodVal = 0
+            }
+            setMethodIcon(playMethodButton)
+            setMethod(playMethodVal)
+        }
+
         setButtonText(toPlayButton)
         toPlayButton.setOnClickListener {
             openPlayActivity(musicPosition)
         }
+
         playerButtonLayout.setOnClickListener {
             openPlayActivity(musicPosition)
         }
@@ -233,6 +251,7 @@ class PlayListActivity : AppCompatActivity() {
         playerButtonLayout = findViewById(R.id.playButtonLayout)
         playButtonImage = findViewById(R.id.playButtonImage)
         skipNextButton = findViewById(R.id.skipToNextButton)
+        playMethodButton = findViewById(R.id.playMethodButton)
 
         setTitle(R.string.title_activity_play_list)
 
@@ -243,10 +262,6 @@ class PlayListActivity : AppCompatActivity() {
             bindService(intent)
         } else {
             requestPermissions()
-        }
-
-        playerButtonLayout.setOnClickListener {
-            // Do nothing
         }
     }
 
@@ -261,7 +276,8 @@ class PlayListActivity : AppCompatActivity() {
                 setTransferData(
                     transferData,
                     speedVal,
-                    null,
+                    continuePlay,
+                    isInOrderQueue,
                     position,
                     false
                 )
@@ -287,6 +303,7 @@ class PlayListActivity : AppCompatActivity() {
                     transferData,
                     speedVal,
                     continuePlay,
+                    isInOrderQueue,
                     null, null
                 )
                 putExtras(transferData)
@@ -320,7 +337,8 @@ class PlayListActivity : AppCompatActivity() {
             setTransferData(
                 transferData,
                 speedVal,
-                null,
+                continuePlay,
+                isInOrderQueue,
                 mediaPlayerService.getMusicPosition(music),
                 true
             )
@@ -378,15 +396,48 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
+    private fun setMethod(method: Int) {
+        if (method == 0) {
+            continuePlay = false
+            mediaPlayerService.setContinues(continuePlay)
+        } else {
+            continuePlay = true
+            mediaPlayerService.setContinues(continuePlay)
+        }
+        if (method == 2) {
+            isInOrderQueue = false
+            mediaPlayerService.setInOrderQueue(isInOrderQueue)
+        } else {
+            isInOrderQueue = true
+            mediaPlayerService.setInOrderQueue(isInOrderQueue)
+        }
+    }
+
+    private fun setMethodIcon(button: MaterialButton) {
+        when (playMethodVal) {
+            0 -> button.setIconResource(R.drawable.ic_play_once_30px)
+            1 -> button.setIconResource(R.drawable.ic_play_continuously_30px)
+            2 -> button.setIconResource(R.drawable.ic_play_randomly_30px)
+        }
+    }
+
+    private fun setMethodVal(continuePlay: Boolean, isInOrderQueue: Boolean) {
+        playMethodVal = if (continuePlay) {
+            if (isInOrderQueue) 1 else 2
+        } else 0
+    }
+
     private fun setTransferData(
         transferBundle: Bundle,
         speed: Float,
         continues: Boolean?,
+        isInOrderQueue: Boolean?,
         position: Int?,
         newSong: Boolean?
     ) {
         transferBundle.putFloat("Speed Values", speed)
         if (continues != null) transferBundle.putBoolean("continuePlay", continues)
+        if (isInOrderQueue != null) transferBundle.putBoolean("isInOrderQueue", isInOrderQueue)
         if (position != null) transferBundle.putInt("musicPosition", position)
         if (newSong != null) transferBundle.putBoolean("newSong", newSong)
     }
@@ -394,5 +445,4 @@ class PlayListActivity : AppCompatActivity() {
     private fun setUsability() {
         playButton.isEnabled = musicSize != 0
     }
-
 }

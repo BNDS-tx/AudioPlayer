@@ -17,6 +17,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import kotlin.random.Random
 
 class PlayerService : Service() {
 
@@ -32,6 +33,8 @@ class PlayerService : Service() {
     private lateinit var musicList: List<Music>
     private var playbackSpeed: Float = 1.0f
     private var isContinue: Boolean = false
+    private var isInOrderQueue: Boolean = true
+    private var playQueue: ArrayList<Int> = ArrayList()
     private var bookMarker: MutableMap<Long, Long> = mutableMapOf()
 
     inner class PlayerBinder : Binder() {
@@ -47,6 +50,8 @@ class PlayerService : Service() {
         mediaPlayer = ExoPlayer.Builder(this).build()
         initializeListener()
         musicList = Scanner(this).scanMusicFiles()
+        playQueue.clear()
+        playQueue = Array(musicList.size) { it }.toCollection(playQueue)
         Log.d("PlayerService", "Service created")
         initializeMediaSession()
         createNotificationChannel()
@@ -181,6 +186,8 @@ class PlayerService : Service() {
 
         metadata = MediaMetadataCompat.Builder()
             .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration())
+            .putString(MediaMetadataCompat.METADATA_KEY_TITLE, getThisTitle())
+            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, getThisArtist())
             .build()
 
         mediaSession.setMetadata(metadata)
@@ -324,9 +331,19 @@ class PlayerService : Service() {
         return filePath
     }
 
-    fun setMusicList(list: List<Music>) { this.musicList = list }
+    fun setMusicList(list: List<Music>) {
+        this.musicList = list
+        playQueue.clear()
+        playQueue = Array(musicList.size) { it }.toCollection(playQueue)
+    }
 
     fun setContinues(continuePlay: Boolean) { this.isContinue = continuePlay }
+
+    fun setInOrderQueue(isInOrderQueue: Boolean) {
+        this.isInOrderQueue = isInOrderQueue
+        playQueue.clear()
+        playQueue = Array(musicList.size) { it }.toCollection(playQueue)
+    }
 
     fun getMusicList(): List<Music> = musicList
 
@@ -392,7 +409,7 @@ class PlayerService : Service() {
     }
 
     fun play(position: Int, speed: Float) {
-        if (mediaPlayer?.playbackState != Player.STATE_ENDED) { mediaPlayer?.stop() }
+        if (!stateCheck(4) || !stateCheck(3)) { mediaPlayer?.stop() }
         musicListPosition = if (position == -1) 0
         else position
         val uri = musicList[musicListPosition].uri
@@ -414,7 +431,15 @@ class PlayerService : Service() {
     }
 
     fun playNext() {
-        musicListPosition = (musicListPosition + 1) % musicList.size
+        if (isInOrderQueue) {
+            musicListPosition = (musicListPosition + 1) % musicList.size
+        } else {
+            playQueue.remove(musicListPosition)
+            if (playQueue.isEmpty()) {
+                playQueue = Array(musicList.size) { it }.toCollection(playQueue)
+            }
+            musicListPosition = playQueue[Random.nextInt(playQueue.size)]
+        }
         if (!checkBookmark(musicList[musicListPosition].id)) {
             play(musicListPosition, playbackSpeed)
         } else {
@@ -475,7 +500,6 @@ class PlayerService : Service() {
 
     private fun updateInformation() {
         setPlaybackState()
-        updateNotification()
         if (checkComplete() && musicListPosition != -1 ) {
             if (!isContinue) { mediaPlayer?.stop() }
             else { playNext() }

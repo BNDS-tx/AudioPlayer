@@ -38,4 +38,5 @@
     <string name="title_empty_fialure">Read Files Error</string>
     <string name="unknown_artisit">Unknown Artist</string>
     <string name="alart_button_dismiss">Dismiss</string>
+    <string name="disInOrder_play">Play musics NOT in order</string>
 </resources>

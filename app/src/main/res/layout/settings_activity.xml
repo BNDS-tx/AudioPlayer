@@ -73,7 +73,7 @@
 
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="0dp"
-                android:layout_weight="0.85"
+                android:layout_weight="1"
                 android:layout_height="match_parent"
                 android:gravity="center_vertical"
                 android:text="@string/continue_play"
@@ -82,6 +82,47 @@
 
             <com.google.android.material.materialswitch.MaterialSwitch
                 android:id="@+id/connectButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"/>
+        </LinearLayout>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="0.075"
+            android:layout_height="match_parent"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:layout_marginTop="15dp"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="0.075"
+            android:layout_height="match_parent"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="0.85"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/card_background_1">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="@string/disInOrder_play"
+                android:layout_marginEnd="5dp"
+                android:layout_marginStart="5dp"/>
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/queueButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center"/>
