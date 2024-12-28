@@ -58,7 +58,7 @@
         android:layout_width="0dp"
         android:layout_height="175dp"
         android:layout_marginBottom="50dp"
-        app:layout_constraintWidth_percent="0.85"
+        app:layout_constraintWidth_percent="0.8"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
@@ -126,13 +126,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintWidth_percent="1"
                 app:layout_constraintVertical_bias="0.4"/>
-
-            <ImageView
-                android:id="@+id/playMethodIcon"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                app:srcCompat="@drawable/ic_play_once_30px" />
         </LinearLayout>
 
         <LinearLayout
@@ -205,7 +198,8 @@
         app:layout_constraintWidth_percent="0.75"
         app:layout_constraintDimensionRatio="1:1"
         android:layout_gravity="center"
-        app:cardCornerRadius="25dp"
+        app:cardCornerRadius="30dp"
+        app:cardElevation="15dp"
         app:cardBackgroundColor="?attr/colorPrimaryContainer"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -232,10 +226,29 @@
             android:id="@+id/bookmarkButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="7dp"
-            android:layout_marginEnd="10dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="6dp"
+            android:layout_marginEnd="60dp"
             android:gravity="center"/>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/methodIconBackground"
+            android:layout_height="40dp"
+            android:layout_width="40dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="10dp"
+            android:layout_marginEnd="10dp"
+            app:cardCornerRadius="25dp"
+            app:cardElevation="0dp">
+
+            <ImageView
+                android:id="@+id/playMethodIcon"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:srcCompat="@drawable/ic_play_once"
+                android:scaleType="centerInside"
+                android:adjustViewBounds="true" />
+        </androidx.cardview.widget.CardView>
     </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

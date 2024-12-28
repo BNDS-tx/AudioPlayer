@@ -49,15 +49,21 @@ class MusicAdapter(
 
         }
 
-        FileHelper.getFilePathFromUri(holder.itemView.context, music.uri) { filePath ->             // get file path asynchronously
-            if (filePath != null) {
-                FileHelper.getAlbumArt(filePath) { bitmap ->                                        // update the album art after getting it asynchronously
-                    holder.albumArt.post {                                                          // update the UI on the main thread
-                        holder.albumArt.setImageBitmap(bitmap)
+        if (music.albumArt == null) {
+            FileHelper.getFilePathFromUri(
+                holder.itemView.context,
+                music.uri
+            ) { filePath ->             // get file path asynchronously
+                if (filePath != null) {
+                    FileHelper.getAlbumArt(filePath) { bitmap ->                                        // update the album art after getting it asynchronously
+                        holder.albumArt.post {                                                          // update the UI on the main thread
+                            holder.albumArt.setImageBitmap(bitmap)
+                            music.albumArt = bitmap
+                        }
                     }
                 }
             }
-        }
+        } else holder.albumArt.setImageBitmap(music.albumArt)
     }
 
     private fun isNeedBookmark(musicId: Long): Boolean {                                            // check if the music has been bookmarked

@@ -85,6 +85,7 @@ class UIAdapter(private val activity: PlayActivity) {
     }
 
     fun updateBar(progressBar: Slider, progress: Long, duration: Long) {
+        if (activity.pauseUpdate) return
         if (progress <= duration && !activity.musicPlayerService.stateCheck(0)
             && duration != 0.toLong()) {
             progressBar.value = progress.toFloat()
@@ -217,7 +218,7 @@ class UIAdapter(private val activity: PlayActivity) {
         activity.nextButton.iconTint = iconColor
         activity.previousButton.backgroundTintList = color
         activity.previousButton.iconTint = iconColor
-        activity.playMethodIcon.backgroundTintList = color
+        activity.playMethodBackground.backgroundTintList = color
         activity.playMethodIcon.imageTintList = iconColor
     }
 

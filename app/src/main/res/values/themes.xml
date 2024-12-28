@@ -3,7 +3,7 @@
     <style name="Theme.AudioPlayer" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">#1B6CBF</item>
-        <item name="colorPrimaryContainer">#A9C2EB</item>
+        <item name="colorPrimaryContainer">#C4D0E6</item>
         <item name="colorOnPrimary">#FFFFFF</item>
         <item name="colorSecondaryContainer">#CDD2D9</item>
         <item name="colorOnPrimaryContainer">#08457E</item>

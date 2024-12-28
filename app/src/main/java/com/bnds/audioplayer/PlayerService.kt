@@ -3,11 +3,7 @@ package com.bnds.audioplayer
 import android.app.*
 import android.content.*
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.media.MediaMetadataRetriever
-import android.net.Uri
 import android.os.*
-import android.provider.MediaStore
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -30,7 +26,7 @@ class PlayerService : Service() {
     private val handler = Handler(Looper.getMainLooper())
 
     private var musicListPosition: Int = -1
-    private lateinit var musicList: List<Music>
+    private var musicList: List<Music> = listOf()
     private var playbackSpeed: Float = 1.0f
     private var isContinue: Boolean = false
     private var isInOrderQueue: Boolean = true
@@ -49,7 +45,7 @@ class PlayerService : Service() {
         super.onCreate()
         mediaPlayer = ExoPlayer.Builder(this).build()
         initializeListener()
-        musicList = Scanner(this).scanMusicFiles()
+//        musicList = Scanner(this).scanMusicFiles()
         playQueue.clear()
         playQueue = Array(musicList.size) { it }.toCollection(playQueue)
         Log.d("PlayerService", "Service created")
@@ -201,7 +197,7 @@ class PlayerService : Service() {
         else { updatePlaybackState(PlaybackStateCompat.STATE_ERROR) }
     }
 
-    private fun updateNotification() {
+    fun updateNotification() {
         val isPlaying = stateCheck(1)
         val duration = getDuration()
         val progress = getProgress()
@@ -314,23 +310,6 @@ class PlayerService : Service() {
 
     fun setContext(context: Context) { activityContext = context }
 
-    private fun uriToFilePath(context: Context, uri: Uri): String? {
-        var filePath: String? = null
-        if ("content".equals(uri.scheme, true)) {
-            val projection = arrayOf(MediaStore.Audio.Media.DATA)
-            context.contentResolver.query(uri, projection,
-                null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-                    filePath = cursor.getString(columnIndex)
-                }
-            }
-        } else if ("file".equals(uri.scheme, true)) {
-            filePath = uri.path
-        }
-        return filePath
-    }
-
     fun setMusicList(list: List<Music>) {
         this.musicList = list
         playQueue.clear()
@@ -360,38 +339,20 @@ class PlayerService : Service() {
     fun getThisPosition(): Int = musicListPosition
 
     fun getThisTitle(): String =
-        if (musicList.isEmpty()) ""
+        if (musicList.isEmpty()) getString(R.string.defualt_playing)
         else musicList[if (musicListPosition == -1) 0 else musicListPosition].title
 
     private fun getThisArtist(): String =
-        if (musicList.isEmpty()) ""
+        if (musicList.isEmpty()) getString(R.string.unknown_artisit)
         else musicList[if (musicListPosition == -1) 0 else musicListPosition].artist
 
-    fun getThisAlbumArt(): Bitmap? {
-        val filePath = getFilePath()?: return null
-        val retriever = MediaMetadataRetriever()
-        var art : Bitmap? = null
-        try {
-            retriever.setDataSource(filePath)
-            val embeddedPicture = retriever.embeddedPicture
-            if (embeddedPicture != null) {
-                art = BitmapFactory.decodeByteArray(embeddedPicture, 0, embeddedPicture.size)
-            }
-        } catch (e: Exception) {
-            Log.e("PlayerService", "Error retrieving album art", e)
-        } finally {
-            retriever.release()
-        }
-        return art
-    }
+    fun getThisAlbumArt(): Bitmap? =
+        if (musicList.isEmpty()) null
+        else musicList[if (musicListPosition == -1) 0 else musicListPosition].albumArt
 
     fun getDuration(): Long = mediaPlayer?.duration ?: 100000
 
     fun getProgress(): Long = mediaPlayer?.currentPosition ?: 0
-
-    fun getFilePath(): String? =
-        if (musicList.isEmpty()) null
-        else uriToFilePath(this, musicList[if (musicListPosition == -1) 0 else musicListPosition].uri).toString()
 
     fun startPlaying(new: Boolean, position: Int, speed: Float) {
         playbackSpeed = speed

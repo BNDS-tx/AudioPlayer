@@ -2,11 +2,11 @@
     <!-- Base application theme. -->
     <style name="Theme.AudioPlayer" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">#A9C2EB</item>
+        <item name="colorPrimary">#C4D0E6</item>
         <item name="colorPrimaryContainer">#2D4C83</item>
         <item name="colorOnPrimary">#2D4C83</item>
         <item name="colorSecondaryContainer">#1B6CBF</item>
-        <item name="colorOnPrimaryContainer">#A9C2EB</item>
+        <item name="colorOnPrimaryContainer">#C4D0E6</item>
         <!-- Customize your theme here. -->
     </style>
 

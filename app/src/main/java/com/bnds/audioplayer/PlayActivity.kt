@@ -15,6 +15,7 @@ import android.widget.ImageView
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
@@ -33,6 +34,7 @@ open class PlayActivity : AppCompatActivity() {
     var bookMarker: MutableMap<Long, Long> = mutableMapOf()
     private var new: Boolean = false
     private var openFromFile: Uri? = null
+    var pauseUpdate: Boolean = false
     private val handler = Handler(Looper.getMainLooper())
 
     private var isBound = false
@@ -57,6 +59,7 @@ open class PlayActivity : AppCompatActivity() {
     lateinit var speedFaster: MaterialTextView
     lateinit var progressBar: Slider
     lateinit var playMethodIcon: ImageView
+    lateinit var playMethodBackground: CardView
     lateinit var nextButton: MaterialButton
     lateinit var previousButton: MaterialButton
     lateinit var backButton: MaterialButton
@@ -118,17 +121,28 @@ open class PlayActivity : AppCompatActivity() {
             UIAdapter(this).setIcon()
         }
 
-        UIAdapter(this).updateBar(                                                           // update the slider with progress
+        UIAdapter(this).updateBar(
             progressBar, musicPlayerService.getProgress(), musicPlayerService.getDuration()
         )
         progressBar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
-            override fun onStartTrackingTouch(slider: Slider) {                                     // stand by when the tracker is being dragged till it is released
+            override fun onStartTrackingTouch(slider: Slider) {
+                pauseUpdate = true
             }
-            override fun onStopTrackingTouch(slider: Slider) {                                      // update progress when the tracker is released
+            override fun onStopTrackingTouch(slider: Slider) {
+                pauseUpdate = false
                 val newProgress = slider.value.toLong()
                 musicPlayerService.seekTo(newProgress)
             }
         })
+        progressBar.setLabelFormatter { value ->
+            val valueInMillis = value.toLong()
+            val timeInMinutes = valueInMillis / 60000
+            val timeInSeconds = (valueInMillis % 60000) / 1000
+            val valueToInMillis = progressBar.valueTo.toLong()
+            val totalInMinutes = valueToInMillis / 60000
+            val totalInSeconds = (valueToInMillis % 60000) / 1000
+            "$timeInMinutes:$timeInSeconds - $totalInMinutes:$totalInSeconds"
+        }
 
         setMethodIcon(playMethodIcon)
         playMethodIcon.setOnClickListener {
@@ -306,6 +320,7 @@ open class PlayActivity : AppCompatActivity() {
         speedFaster = findViewById(R.id.speedFaster)
         progressBar = findViewById(R.id.progressBar)
         playMethodIcon = findViewById(R.id.playMethodIcon)
+        playMethodBackground = findViewById(R.id.methodIconBackground)
         nextButton = findViewById(R.id.playNextButton)
         previousButton = findViewById(R.id.playPreviousButton)
         backButton = findViewById(R.id.backButton)
@@ -374,9 +389,9 @@ open class PlayActivity : AppCompatActivity() {
 
     private fun setMethodIcon(iconView: ImageView) {
         when (playMethodVal) {
-            0 -> iconView.setImageResource(R.drawable.ic_play_once_30px)
-            1 -> iconView.setImageResource(R.drawable.ic_play_continuously_30px)
-            2 -> iconView.setImageResource(R.drawable.ic_play_randomly_30px)
+            0 -> iconView.setImageResource(R.drawable.ic_play_once)
+            1 -> iconView.setImageResource(R.drawable.ic_play_continuously)
+            2 -> iconView.setImageResource(R.drawable.ic_play_randomly)
         }
     }
 

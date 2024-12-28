@@ -327,8 +327,10 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun refreshMusicList() {
         if (!hasPermissions()) { requestPermissions(); return }
-        mediaPlayerService.setMusicList(Scanner(this).scanMusicFiles())
+        mediaPlayerService.setMusicList(Scanner(this)
+            .scanMusicFiles(mediaPlayerService.getMusicList()))
         musicSize = mediaPlayerService.getMusicSize()
+        mediaPlayerService.updateNotification()
         val transferData = Bundle()
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         recyclerView.layoutManager = GridLayoutManager(this, if (isLandscape) 2 else 1)
@@ -399,25 +401,25 @@ class PlayListActivity : AppCompatActivity() {
     private fun setMethod(method: Int) {
         if (method == 0) {
             continuePlay = false
-            mediaPlayerService.setContinues(continuePlay)
+            mediaPlayerService.setContinues(false)
         } else {
             continuePlay = true
-            mediaPlayerService.setContinues(continuePlay)
+            mediaPlayerService.setContinues(true)
         }
         if (method == 2) {
             isInOrderQueue = false
-            mediaPlayerService.setInOrderQueue(isInOrderQueue)
+            mediaPlayerService.setInOrderQueue(false)
         } else {
             isInOrderQueue = true
-            mediaPlayerService.setInOrderQueue(isInOrderQueue)
+            mediaPlayerService.setInOrderQueue(true)
         }
     }
 
     private fun setMethodIcon(button: MaterialButton) {
         when (playMethodVal) {
-            0 -> button.setIconResource(R.drawable.ic_play_once_30px)
-            1 -> button.setIconResource(R.drawable.ic_play_continuously_30px)
-            2 -> button.setIconResource(R.drawable.ic_play_randomly_30px)
+            0 -> button.setIconResource(R.drawable.ic_play_once)
+            1 -> button.setIconResource(R.drawable.ic_play_continuously)
+            2 -> button.setIconResource(R.drawable.ic_play_randomly)
         }
     }
 
