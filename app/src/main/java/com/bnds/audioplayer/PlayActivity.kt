@@ -149,7 +149,7 @@ open class PlayActivity : AppCompatActivity() {
             when (playMethodVal) {
                 0 -> playMethodVal = 1
                 1 -> playMethodVal = 2
-                2 -> playMethodVal = 3
+                2 -> playMethodVal = 0
             }
             setMethodIcon(playMethodIcon)
             setMethod(playMethodVal)

@@ -22,6 +22,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
@@ -63,6 +64,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private lateinit var recyclerView: RecyclerView
+    private lateinit var musicAdapter: MusicAdapter
     private lateinit var refreshButton: MaterialButton
     private lateinit var toPlayButton: MaterialButton
     private lateinit var settingsButton: MaterialButton
@@ -144,6 +146,7 @@ class PlayListActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        sharedPreferencesSaveData()
         val intent = Intent(this, PlayerService::class.java)
         unbindService()
         stopService(intent)
@@ -160,6 +163,32 @@ class PlayListActivity : AppCompatActivity() {
         if (isBound) {
             unbindService(connection)
             isBound = false
+        }
+    }
+
+    private fun adapterBuilder() {
+        val transferData = Bundle()
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        recyclerView.layoutManager = GridLayoutManager(this, if (isLandscape) 2 else 1)
+        musicAdapter = MusicAdapter(
+            mediaPlayerService.getMusicList(), mediaPlayerService.getBookmark()) { music ->
+            setTransferData(
+                transferData,
+                speedVal,
+                continuePlay,
+                isInOrderQueue,
+                mediaPlayerService.getMusicPosition(music),
+                true
+            )
+            val intent : Intent = Intent(this, PlayActivity::class.java).apply(
+                fun Intent.() {
+                    putExtras(transferData)
+                    putExtra("valid", true)
+                }
+            )
+            unbindService()
+            handler.removeCallbacksAndMessages(null)
+            activityResultLauncher.launch(intent)
         }
     }
 
@@ -183,7 +212,12 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun handleMusicPlayback() {
-        if (isNewOpen) { refreshMusicList() }
+        adapterBuilder()
+        if (isNewOpen) {
+            sharedPreferencesLoadData()
+            updateMusicList()
+            isNewOpen = false
+        } else updateMusicMarker()
         mediaPlayerService.setContext(this)
         mediaPlayerService.setContinues(continuePlay)
         mediaPlayerService.setInOrderQueue(isInOrderQueue)
@@ -191,7 +225,7 @@ class PlayListActivity : AppCompatActivity() {
 
         setSupportActionBar(findViewById(R.id.toolbar))
         refreshButton.setOnClickListener {
-            refreshMusicList()
+            updateMusicList()
             setUsability()
         }
 
@@ -265,6 +299,14 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadData() {
+        if (!hasPermissions()) { requestPermissions(); return }
+        mediaPlayerService.setMusicList(Scanner(this)
+            .scanMusicFiles(mediaPlayerService.getMusicList()))
+        musicSize = mediaPlayerService.getMusicSize()
+        mediaPlayerService.updateNotification()
+    }
+
     private fun openPlayActivity(position: Int) {
         val intent = Intent(this, PlayActivity::class.java).apply(
             fun Intent.() {
@@ -323,38 +365,6 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun playNextController(mediaPlayerService: PlayerService) {
         mediaPlayerService.playNext()
-    }
-
-    private fun refreshMusicList() {
-        if (!hasPermissions()) { requestPermissions(); return }
-        mediaPlayerService.setMusicList(Scanner(this)
-            .scanMusicFiles(mediaPlayerService.getMusicList()))
-        musicSize = mediaPlayerService.getMusicSize()
-        mediaPlayerService.updateNotification()
-        val transferData = Bundle()
-        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        recyclerView.layoutManager = GridLayoutManager(this, if (isLandscape) 2 else 1)
-        recyclerView.adapter = MusicAdapter(
-            mediaPlayerService.getMusicList(), mediaPlayerService.getBookmark()) { music ->
-            setTransferData(
-                transferData,
-                speedVal,
-                continuePlay,
-                isInOrderQueue,
-                mediaPlayerService.getMusicPosition(music),
-                true
-            )
-            val intent : Intent = Intent(this, PlayActivity::class.java).apply(
-                fun Intent.() {
-                    putExtras(transferData)
-                    putExtra("valid", true)
-                }
-            )
-            unbindService()
-            handler.removeCallbacksAndMessages(null)
-            activityResultLauncher.launch(intent)
-        }
-        isNewOpen = false
     }
 
     private fun requestPermissions() {
@@ -446,5 +456,45 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun setUsability() {
         playButton.isEnabled = musicSize != 0
+    }
+
+    private fun sharedPreferencesSaveData() {
+        val sharedPreferences = this.getSharedPreferences("app_preferences", MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        val bookmarkString = mediaPlayerService.getBookmark().toString()
+        editor.putString("bookmarks", bookmarkString)
+        editor.apply()
+    }
+
+    private fun sharedPreferencesLoadData() {
+        val sharedPreferences = this.getSharedPreferences("app_preferences", MODE_PRIVATE)
+        var bookmarkString = sharedPreferences.getString("bookmarks", "")
+        bookmarkString = bookmarkString?.removeSurrounding("{", "}")
+        if (bookmarkString != null && bookmarkString.isNotBlank()) {
+            val entries = bookmarkString.split(",")
+            for (entry in entries) {
+                val (key, value) = entry.split("=")
+                mediaPlayerService.setBookmark(key.trim().toLong(), value.trim().toLong())
+            }
+        }
+    }
+
+    private fun updateMusicList() {
+        if (isNewOpen) recyclerView.adapter = musicAdapter
+        val oldMusicList = mediaPlayerService.getMusicList()
+        loadData()
+        val newMusicList = mediaPlayerService.getMusicList()
+        val diffResult = DiffUtil.calculateDiff(MusicDiffCallback(oldMusicList, newMusicList))
+        musicAdapter.submitList(newMusicList)
+        diffResult.dispatchUpdatesTo(musicAdapter)
+    }
+
+    private fun updateMusicMarker() {
+        val bookMarker = mediaPlayerService.getBookmark()
+        for (id in bookMarker.keys) {
+            musicAdapter.notifyItemChanged(
+                mediaPlayerService.getMusicList().indexOfFirst { it.id == id }.takeIf { it != -1 }!!
+            )
+        }
     }
 }

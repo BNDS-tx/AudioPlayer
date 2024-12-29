@@ -87,4 +87,8 @@ class MusicAdapter(
     }
 
     override fun getItemCount(): Int = musicList.size                                               // get the number of the musics scanned
+
+    fun submitList(newList: List<Music>) {
+        musicList = newList
+    }
 }

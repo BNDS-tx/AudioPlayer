@@ -369,7 +369,7 @@ class PlayerService : Service() {
         }
     }
 
-    fun play(position: Int, speed: Float) {
+    fun play(position: Int, speed: Float, start: Int? = null) {
         if (!stateCheck(4) || !stateCheck(3)) { mediaPlayer?.stop() }
         musicListPosition = if (position == -1) 0
         else position
@@ -378,7 +378,8 @@ class PlayerService : Service() {
         playbackSpeed = speed
         try {
             mediaPlayer?.apply {
-                setMediaItem(MediaItem.fromUri(uri), bookMark?.toLong() ?: 0)
+                if (start != null) setMediaItem(MediaItem.fromUri(uri), start.toLong())
+                else setMediaItem(MediaItem.fromUri(uri), bookMark?.toLong() ?: 0)
                 prepare()
                 setPlaybackSpeed(playbackSpeed)
                 play()
@@ -457,6 +458,10 @@ class PlayerService : Service() {
         } else {
             bookMarker[musicList[musicListPosition].id] = 0
         }
+    }
+
+    fun setBookmark(id: Long, position: Long) {
+        bookMarker[id] = position
     }
 
     private fun updateInformation() {

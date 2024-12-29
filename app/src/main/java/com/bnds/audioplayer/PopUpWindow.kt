@@ -6,8 +6,7 @@ class PopUpWindow(private val playerService: PlayerService) {
     fun popupMarker(musicPosition: Int, speed: Float) {
         val builder = playerService.activityContext?.let { MaterialAlertDialogBuilder(it) }
         builder?.setTitle(R.string.title_play_bookmark)
-        playerService.play(musicPosition, speed)
-        playerService.pauseAndResume()
+        if (playerService.stateCheck(1)) playerService.pauseAndResume()
         builder?.setMessage(R.string.bookmark_nottification)
         builder?.setPositiveButton(R.string.bookmark_yes) { dialog, _ ->
             playerService.play(musicPosition, speed)
@@ -16,7 +15,7 @@ class PopUpWindow(private val playerService: PlayerService) {
             dialog.dismiss()
         }
         builder?.setNegativeButton(R.string.bookmark_no) { dialog, _ ->
-            playerService.play(musicPosition, speed)
+            playerService.play(musicPosition, speed, 0)
             dialog.dismiss()
         }
         val dialog = builder?.create()
