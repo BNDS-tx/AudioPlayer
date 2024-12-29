@@ -4,47 +4,98 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     tools:context=".PlayListActivity">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/app_bar"
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="190dp"
-        android:fitsSystemWindows="true"
-        android:background="?attr/colorSurface">
+        android:layout_height="match_parent" >
 
-        <com.google.android.material.appbar.CollapsingToolbarLayout
-            android:id="@+id/toolbar_layout"
-            style="@style/Widget.MaterialComponents.Toolbar.Primary"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="155dp"
-            android:fitsSystemWindows="true"
-            android:title="@string/title_activity_play_list"
-            app:contentScrim="?attr/colorPrimaryContainer"
-            android:background="?attr/colorPrimaryContainer"
-            app:expandedTitleMarginBottom="40dp"
-            app:expandedTitleMarginEnd="20dp"
-            app:expandedTitleMarginStart="20dp"
-            app:expandedTitleTextColor="?attr/colorOnPrimaryContainer"
-            app:expandedTitleTextAppearance="@style/ExpandedTitleTextAppearance"
-            app:collapsedTitleTextColor="?attr/colorOnPrimaryContainer"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:toolbarId="@+id/toolbar" >
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/text_margin"
+            android:paddingEnd="@dimen/text_margin">
 
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/playListRecyclerView"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:background="?attr/colorPrimaryContainer"
-                android:minHeight="?attr/actionBarSize"
-                android:theme="?attr/actionBarTheme"
-                app:layout_collapseMode="pin" />
+                android:layout_height="match_parent"
+                android:layout_marginBottom="100dp"
+                android:clipToPadding="false"/>
+        </LinearLayout>
 
-        </com.google.android.material.appbar.CollapsingToolbarLayout>
-    </com.google.android.material.appbar.AppBarLayout>
+        <androidx.coordinatorlayout.widget.CoordinatorLayout
+            android:layout_width="match_parent"
+            android:layout_height="145dp"
+            android:orientation="horizontal"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent" >
 
-    <include layout="@layout/content_scrolling" />
+            <LinearLayout
+                android:layout_height="105dp"
+                android:layout_width="match_parent"
+                android:layout_marginEnd="105dp"
+                android:gravity="center_vertical"
+                android:layout_gravity="start|bottom" >
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="wrap_content"
+                    android:layout_height="75dp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="10dp"
+                    app:cardCornerRadius="35dp"
+                    app:cardElevation="10dp">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/page_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/card_background_title"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:singleLine="true"
+                        android:text="@string/title_activity_play_list"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="30sp"
+                        android:textStyle="bold" />
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rightLayout"
+                android:layout_width="wrap_content"
+                android:layout_height="105dp"
+                android:gravity="center_vertical"
+                android:layout_gravity="end|bottom">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="75dp"
+                    android:layout_height="75dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="20dp"
+                    app:cardCornerRadius="35dp"
+                    app:cardElevation="10dp">
+
+                    <ImageView
+                        android:layout_width="150dp"
+                        android:layout_height="150dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/card_background_title"
+                        app:srcCompat="@drawable/ic_refresh_24px"
+                        android:scaleType="centerInside"
+                        android:adjustViewBounds="true"
+                        app:tint="?attr/colorPrimary"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/refreshButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:backgroundTint="#00000000" />
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -125,24 +176,11 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/refreshButton"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_marginTop="90dp"
-                android:layout_marginEnd="80dp"
-                android:background="@drawable/button_circle"
-                app:icon="@drawable/ic_refresh_24px"
-                app:iconSize="26dp"
-                android:padding="12dp"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.google.android.material.button.MaterialButton
                 android:id="@+id/skipToNextButton"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:layout_marginTop="90dp"
-                android:layout_marginEnd="140dp"
+                android:layout_marginEnd="80dp"
                 android:background="@drawable/button_circle"
                 app:icon="@drawable/ic_skip_next_24px"
                 app:iconSize="26dp"
@@ -155,7 +193,7 @@
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:layout_marginTop="90dp"
-                android:layout_marginEnd="200dp"
+                android:layout_marginEnd="140dp"
                 android:background="@drawable/button_circle"
                 app:icon="@drawable/ic_play_once"
                 app:iconSize="26dp"

@@ -3,6 +3,9 @@ package com.bnds.audioplayer
 import android.app.*
 import android.content.*
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
+import android.net.Uri
 import android.os.*
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -348,7 +351,31 @@ class PlayerService : Service() {
 
     fun getThisAlbumArt(): Bitmap? =
         if (musicList.isEmpty()) null
-        else musicList[if (musicListPosition == -1) 0 else musicListPosition].albumArt
+        else
+            if (musicList[if (musicListPosition == -1) 0 else musicListPosition].albumArt != null)
+                musicList[if (musicListPosition == -1) 0 else musicListPosition].albumArt
+            else getAlbumArtFromUri(
+                musicList[if (musicListPosition == -1) 0 else musicListPosition].uri
+            )
+
+    private fun getAlbumArtFromUri(uri: Uri): Bitmap? {
+        var retriever: MediaMetadataRetriever? = null
+        return try {
+            retriever = MediaMetadataRetriever()
+            retriever.setDataSource(this, uri) // 通过 Uri 设置数据源
+            val embeddedPicture = retriever.embeddedPicture
+            if (embeddedPicture != null) {
+                BitmapFactory.decodeByteArray(embeddedPicture, 0, embeddedPicture.size)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("AlbumArt", "Error retrieving album art from Uri: $uri", e)
+            null
+        } finally {
+            retriever?.release()
+        }
+    }
 
     fun getDuration(): Long = mediaPlayer?.duration ?: 100000
 
@@ -412,7 +439,9 @@ class PlayerService : Service() {
     }
 
     fun playPrevious() {
-        musicListPosition = (musicListPosition - 1 + musicList.size) % musicList.size
+        if (isInOrderQueue) {
+            musicListPosition = (musicListPosition - 1 + musicList.size) % musicList.size
+        }
         if (!checkBookmark(musicList[musicListPosition].id)) {
             play(musicListPosition, playbackSpeed)
         } else {

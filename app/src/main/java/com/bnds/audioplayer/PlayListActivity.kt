@@ -1,5 +1,6 @@
 package com.bnds.audioplayer
 
+import android.app.Dialog
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
@@ -12,7 +13,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.TypedValue
-import android.widget.Button
+import android.view.ViewTreeObserver
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -27,6 +28,8 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.textview.MaterialTextView
+import java.util.concurrent.Executors
 
 class PlayListActivity : AppCompatActivity() {
 
@@ -41,9 +44,6 @@ class PlayListActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var isNewOpen = false
     private var isDirectionChanged = false
-
-    var isLoading = false
-    var itemNum = 0
 
     private lateinit var mediaPlayerService: PlayerService
     private var isBound = false
@@ -70,12 +70,14 @@ class PlayListActivity : AppCompatActivity() {
     private lateinit var musicAdapter: MusicAdapter
     private lateinit var refreshButton: MaterialButton
     private lateinit var toPlayButton: MaterialButton
+    private lateinit var titleText: MaterialTextView
     private lateinit var settingsButton: MaterialButton
     private lateinit var playButton: MaterialButton
     private lateinit var playerButtonLayout: LinearLayout
     private lateinit var playButtonImage: ImageView
     private lateinit var skipNextButton: MaterialButton
     private lateinit var playMethodButton: MaterialButton
+    private lateinit var loadingDialog: Dialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,7 +91,7 @@ class PlayListActivity : AppCompatActivity() {
         activityResultLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result ->
-            if (result.resultCode == RESULT_OK && result.data != null) {
+            if (result.data != null) {
                 var speedSetting = 1F
                 val transferData = result.data!!.extras
                 transferData?.keySet()?.forEach { key ->
@@ -107,6 +109,10 @@ class PlayListActivity : AppCompatActivity() {
                 } else {
                     requestPermissions()
                 }
+            }
+            if (result.resultCode == RESULT_FIRST_USER) {
+                dialogShow()
+                updateMusicMarker()
             }
         }
     }
@@ -144,7 +150,7 @@ class PlayListActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         val intent = Intent(this, PlayerService::class.java)
-        if (isBound) { setIcon(); setImage() } else { bindService(intent) }
+        if (isBound) { setIcon(); setImage(); setPlayingText() } else { bindService(intent) }
     }
 
     override fun onDestroy() {
@@ -196,15 +202,16 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun checkPlayProgress() {
-        if ((musicPosition != -1 || !mediaPlayerService.stateCheck(1)) &&
+        if ((musicPosition != -1 || mediaPlayerService.stateCheck(1)) &&
             musicPosition != mediaPlayerService.getThisPosition()) {
             musicPosition = mediaPlayerService.getThisPosition()
             toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
+            titleText.text = mediaPlayerService.getPositionTitle(musicPosition)
             setImage()
         }
         if (isDirectionChanged) setImage(); isDirectionChanged = false
         setIcon()
-        setButtonText(toPlayButton)
+        setPlayingText()
         handler.postDelayed({ checkPlayProgress() }, (100 / speedVal).toLong())
     }
 
@@ -214,19 +221,32 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
+    private fun dialogShow() {
+        if (!loadingDialog.isShowing) loadingDialog.show()
+    }
+
+    private fun dialogClose() {
+        if (loadingDialog.isShowing) loadingDialog.dismiss()
+    }
+
     private fun handleMusicPlayback() {
         adapterBuilder()
         if (isNewOpen) {
             sharedPreferencesLoadData()
             updateMusicList()
             isNewOpen = false
-        } else updateMusicMarker()
+        }
         mediaPlayerService.setContext(this)
         mediaPlayerService.setContinues(continuePlay)
         mediaPlayerService.setInOrderQueue(isInOrderQueue)
         setMethodVal(continuePlay, isInOrderQueue)
 
-        setSupportActionBar(findViewById(R.id.toolbar))
+        titleText.setOnClickListener {
+            if (musicPosition != -1)
+                CenterSmoothScroller(this)
+                    .smoothScrollToPositionCentered(recyclerView, musicPosition + 1)
+        }
+
         refreshButton.setOnClickListener {
             updateMusicList()
             setUsability(musicSize != 0)
@@ -259,7 +279,7 @@ class PlayListActivity : AppCompatActivity() {
             setMethod(playMethodVal)
         }
 
-        setButtonText(toPlayButton)
+        setPlayingText()
         toPlayButton.setOnClickListener {
             openPlayActivity(musicPosition)
         }
@@ -283,12 +303,20 @@ class PlayListActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.playListRecyclerView)
         refreshButton = findViewById(R.id.refreshButton)
         toPlayButton = findViewById(R.id.jumpToPlayButton)
+        titleText = findViewById(R.id.page_title)
         settingsButton = findViewById(R.id.settingsButton)
         playButton = findViewById(R.id.playButton)
         playerButtonLayout = findViewById(R.id.playButtonLayout)
         playButtonImage = findViewById(R.id.playButtonImage)
         skipNextButton = findViewById(R.id.skipToNextButton)
         playMethodButton = findViewById(R.id.playMethodButton)
+
+        loadingDialog = Dialog(this).apply {
+            setContentView(R.layout.dialog_loading) // 自定义布局
+            window?.setBackgroundDrawableResource(android.R.color.transparent) // 背景透明
+            setCancelable(false) // 禁止手动取消
+            handler.postDelayed({ if (loadingDialog.isShowing) dismiss() }, 5000)
+        }
 
         setTitle(R.string.title_activity_play_list)
 
@@ -297,6 +325,7 @@ class PlayListActivity : AppCompatActivity() {
         if (hasPermissions()) {
             startService(intent)
             bindService(intent)
+            dialogShow()
         } else {
             requestPermissions()
         }
@@ -356,6 +385,7 @@ class PlayListActivity : AppCompatActivity() {
             }
         )
         unbindService()
+        handler.removeCallbacksAndMessages(null)
         activityResultLauncher.launch(intent)
     }
 
@@ -374,18 +404,6 @@ class PlayListActivity : AppCompatActivity() {
         ActivityCompat.requestPermissions(
             this, requiredReadPermissions, 101
         )
-    }
-
-    private fun setButtonText(button: Button) {
-        if (musicPosition != -1 && mediaPlayerService.getProgress() > 0) {
-            button.text = mediaPlayerService.getPositionTitle(musicPosition)
-        } else if (mediaPlayerService.stateCheck(1)) {
-            musicPosition = mediaPlayerService.getThisPosition()
-            button.text = mediaPlayerService.getPositionTitle(musicPosition)
-        } else {
-            button.text = if (musicPosition == -1) getString(R.string.defualt_playing)
-                else "..."
-        }
     }
 
     private fun setIcon() {
@@ -442,6 +460,21 @@ class PlayListActivity : AppCompatActivity() {
         } else 0
     }
 
+    private fun setPlayingText() {
+        if (musicPosition != -1 && mediaPlayerService.getProgress() > 0) {
+            toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
+            titleText.text = mediaPlayerService.getPositionTitle(musicPosition)
+        } else if (mediaPlayerService.stateCheck(1)) {
+            musicPosition = mediaPlayerService.getThisPosition()
+            toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
+            titleText.text = mediaPlayerService.getPositionTitle(musicPosition)
+        } else {
+            toPlayButton.text = if (musicPosition == -1) getString(R.string.defualt_playing)
+            else "..."
+            titleText.text = getString(R.string.title_activity_play_list)
+        }
+    }
+
     private fun setTransferData(
         transferBundle: Bundle,
         speed: Float,
@@ -464,7 +497,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun sharedPreferencesSaveData() {
-        val sharedPreferences = this.getSharedPreferences("app_preferences", MODE_PRIVATE)
+        val sharedPreferences = this.getSharedPreferences("bookmarks", MODE_PRIVATE)
         val editor = sharedPreferences.edit()
         val bookmarkString = mediaPlayerService.getBookmark().toString()
         editor.putString("bookmarks", bookmarkString)
@@ -472,7 +505,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun sharedPreferencesLoadData() {
-        val sharedPreferences = this.getSharedPreferences("app_preferences", MODE_PRIVATE)
+        val sharedPreferences = this.getSharedPreferences("bookmarks", MODE_PRIVATE)
         var bookmarkString = sharedPreferences.getString("bookmarks", "")
         bookmarkString = bookmarkString?.removeSurrounding("{", "}")
         if (bookmarkString != null && bookmarkString.isNotBlank()) {
@@ -486,12 +519,21 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun updateMusicList() {
         if (isNewOpen) recyclerView.adapter = musicAdapter
+        else dialogShow()
         val oldMusicList = mediaPlayerService.getMusicList()
         loadData()
         val newMusicList = mediaPlayerService.getMusicList()
         val diffResult = DiffUtil.calculateDiff(MusicDiffCallback(oldMusicList, newMusicList))
         musicAdapter.setList(newMusicList)
         diffResult.dispatchUpdatesTo(musicAdapter)
+
+        recyclerView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                recyclerView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                mediaPlayerService.setMusicList(musicAdapter.getList())
+                handler.postDelayed({ dialogClose() }, (5 * musicSize).toLong())
+            }
+        })
     }
 
     private fun updateMusicMarker() {
@@ -501,6 +543,7 @@ class PlayListActivity : AppCompatActivity() {
                 mediaPlayerService.getMusicList().indexOfFirst { it.id == id }.takeIf { it != -1 }!!
             )
         }
+        handler.postDelayed({ dialogClose() }, (2 * musicSize).toLong())
         var removeList =  mutableListOf<Long>()
         for (id in bookMarker.keys) {
             if (bookMarker[id] == 0L) removeList.add(id)

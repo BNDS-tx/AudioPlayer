@@ -35,6 +35,7 @@ open class PlayActivity : AppCompatActivity() {
     private var new: Boolean = false
     private var openFromFile: Uri? = null
     var pauseUpdate: Boolean = false
+    private var needRefresh: Boolean = false
     private val handler = Handler(Looper.getMainLooper())
 
     private var isBound = false
@@ -119,6 +120,7 @@ open class PlayActivity : AppCompatActivity() {
                 bookMarker = musicPlayerService.getBookmark()
             }
             UIAdapter(this).setIcon()
+            needRefresh = !needRefresh
         }
 
         UIAdapter(this).updateBar(
@@ -267,7 +269,8 @@ open class PlayActivity : AppCompatActivity() {
         transferData.putBoolean("continuePlay", continuePlay)
         transferData.putBoolean("isInOrderQueue", isInOrderQueue)
         intent2.putExtras(transferData)
-        setResult(RESULT_OK, intent2)
+        if (!needRefresh) setResult(RESULT_OK, intent2)
+        else setResult(RESULT_FIRST_USER, intent2)
         handler.removeCallbacksAndMessages(null)
         unbindService()
         finish()
@@ -302,7 +305,6 @@ open class PlayActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        unbindService()
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setContentView(R.layout.activity_play)
         } else {

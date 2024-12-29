@@ -12,7 +12,14 @@ class MusicAdapter(
     private var musicList: List<Music>,
     private var bookMarker: MutableMap<Long, Long>,
     private val onItemClick: (Music) -> Unit
-) : RecyclerView.Adapter<MusicAdapter.MusicViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    private val TYPE_HEADER = 0
+    private val TYPE_ITEM = 1
+
+    override fun getItemViewType(position: Int): Int {
+        return if (position == 0 || position == musicList.size + 1) TYPE_HEADER else TYPE_ITEM
+    }
 
     inner class MusicViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {               // define the view holder
         val title: TextView = itemView.findViewById(R.id.musicTitle)
@@ -24,46 +31,58 @@ class MusicAdapter(
             itemView.setOnClickListener {
                 val position = bindingAdapterPosition                                               // use bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {                                         // make sure the position is valid
-                    onItemClick(musicList[position])                                                // call the onItemClick function
+                    onItemClick(musicList[position - 1])                                            // call the onItemClick function
                 }
             }
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MusicViewHolder {            // create the view holder
-        val view = LayoutInflater.from(parent.context).inflate(
-            R.layout.item_music, parent, false
-        )
-        return MusicViewHolder(view)
+    inner class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {            // create the view holder
+        if (viewType == TYPE_HEADER) {
+            val view = LayoutInflater.from(parent.context).inflate(
+                R.layout.item_header, parent, false
+            )
+            return HeaderViewHolder(view)
+        } else {
+            val view = LayoutInflater.from(parent.context).inflate(
+                R.layout.item_music, parent, false
+            )
+            return MusicViewHolder(view)
+        }
     }
 
-    override fun onBindViewHolder(holder: MusicViewHolder, position: Int) {                         // bind the view holder
-        val music = musicList[position]
-        holder.title.text = music.title
-        holder.artist.text = music.artist
-        if (isNeedBookmark(music.id)) {
-            holder.bookmark.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                0, 0, R.drawable.ic_bookmark_added_24px, 0
-            )
-            holder.bookmark.text = longToTime(bookMarker[music.id]!!)
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        if (getItemViewType(position) == TYPE_ITEM) {
+            holder as MusicViewHolder
+            val music = musicList[position - 1]
+            holder.title.text = music.title
+            holder.artist.text = music.artist
+            if (isNeedBookmark(music.id)) {
+                holder.bookmark.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                    0, 0, R.drawable.ic_bookmark_added_24px, 0
+                )
+                holder.bookmark.text = longToTime(bookMarker[music.id]!!)
 
-        }
+            }
 
-        if (music.albumArt == null) {
-            FileHelper.getFilePathFromUri(
-                holder.itemView.context,
-                music.uri
-            ) { filePath ->             // get file path asynchronously
-                if (filePath != null) {
-                    FileHelper.getAlbumArt(filePath) { bitmap ->                                        // update the album art after getting it asynchronously
-                        holder.albumArt.post {                                                          // update the UI on the main thread
-                            holder.albumArt.setImageBitmap(bitmap)
-                            music.albumArt = bitmap
+            if (music.albumArt == null) {
+                FileHelper.getFilePathFromUri(
+                    holder.itemView.context,
+                    music.uri
+                ) { filePath ->             // get file path asynchronously
+                    if (filePath != null) {
+                        FileHelper.getAlbumArt(filePath) { bitmap ->                                        // update the album art after getting it asynchronously
+                            holder.albumArt.post {                                                          // update the UI on the main thread
+                                holder.albumArt.setImageBitmap(bitmap)
+                                music.albumArt = bitmap
+                            }
                         }
                     }
                 }
-            }
-        } else holder.albumArt.setImageBitmap(music.albumArt)
+            } else holder.albumArt.setImageBitmap(music.albumArt)
+        }
     }
 
     private fun isNeedBookmark(musicId: Long): Boolean {                                            // check if the music has been bookmarked
@@ -86,9 +105,13 @@ class MusicAdapter(
         return String.format(Locale.getDefault(), "%02d:%02d", minutes, remainingSeconds)
     }
 
-    override fun getItemCount(): Int = musicList.size                                               // get the number of the musics scanned
+    override fun getItemCount(): Int = musicList.size + 2                                           // get the number of the musics scanned
 
     fun setList(newList: List<Music>) {
         musicList = newList
+    }
+
+    fun getList(): List<Music> {
+        return musicList
     }
 }
