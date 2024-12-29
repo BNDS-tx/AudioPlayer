@@ -464,6 +464,10 @@ class PlayerService : Service() {
         bookMarker[id] = position
     }
 
+    fun removeBookmark(id: Long) {
+        bookMarker.remove(id)
+    }
+
     private fun updateInformation() {
         setPlaybackState()
         if (checkComplete() && musicListPosition != -1 ) {

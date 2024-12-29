@@ -42,6 +42,9 @@ class PlayListActivity : AppCompatActivity() {
     private var isNewOpen = false
     private var isDirectionChanged = false
 
+    var isLoading = false
+    var itemNum = 0
+
     private lateinit var mediaPlayerService: PlayerService
     private var isBound = false
     private val connection = object : ServiceConnection {
@@ -226,10 +229,10 @@ class PlayListActivity : AppCompatActivity() {
         setSupportActionBar(findViewById(R.id.toolbar))
         refreshButton.setOnClickListener {
             updateMusicList()
-            setUsability()
+            setUsability(musicSize != 0)
         }
 
-        setUsability()
+        setUsability(musicSize != 0)
 
         mediaPlayerService.startPlaying(false, musicPosition, speedVal)
 
@@ -328,7 +331,7 @@ class PlayListActivity : AppCompatActivity() {
             }
         )
         unbindService()
-        setUsability()
+        setUsability(musicSize != 0)
         handler.removeCallbacksAndMessages(null)
         activityResultLauncher.launch(intent)
     }
@@ -454,8 +457,10 @@ class PlayListActivity : AppCompatActivity() {
         if (newSong != null) transferBundle.putBoolean("newSong", newSong)
     }
 
-    private fun setUsability() {
-        playButton.isEnabled = musicSize != 0
+    private fun setUsability(switch: Boolean) {
+        playButton.isEnabled = switch
+        skipNextButton.isEnabled = switch
+        toPlayButton.isEnabled = switch
     }
 
     private fun sharedPreferencesSaveData() {
@@ -485,7 +490,7 @@ class PlayListActivity : AppCompatActivity() {
         loadData()
         val newMusicList = mediaPlayerService.getMusicList()
         val diffResult = DiffUtil.calculateDiff(MusicDiffCallback(oldMusicList, newMusicList))
-        musicAdapter.submitList(newMusicList)
+        musicAdapter.setList(newMusicList)
         diffResult.dispatchUpdatesTo(musicAdapter)
     }
 
@@ -495,6 +500,13 @@ class PlayListActivity : AppCompatActivity() {
             musicAdapter.notifyItemChanged(
                 mediaPlayerService.getMusicList().indexOfFirst { it.id == id }.takeIf { it != -1 }!!
             )
+        }
+        var removeList =  mutableListOf<Long>()
+        for (id in bookMarker.keys) {
+            if (bookMarker[id] == 0L) removeList.add(id)
+        }
+        for (id in removeList) {
+            mediaPlayerService.removeBookmark(id)
         }
     }
 }
