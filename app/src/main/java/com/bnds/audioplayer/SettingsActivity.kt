@@ -7,6 +7,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.os.IBinder
 import android.view.View
+import android.widget.ImageView
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -15,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.textview.MaterialTextView
 
 class SettingsActivity : AppCompatActivity() {
     private var speedVal: Float = 1F
@@ -36,7 +38,8 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private lateinit var backButton: MaterialButton
+    private lateinit var backButton: ImageView
+    private lateinit var titleText: MaterialTextView
     private lateinit var connectButton: MaterialSwitch
     private lateinit var queueButton: MaterialSwitch
     private lateinit var speedControl: MaterialButtonToggleGroup
@@ -119,6 +122,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         backButton = findViewById(R.id.backButton)
+        titleText = findViewById(R.id.titleText)
         connectButton = findViewById(R.id.connectButton)
         queueButton = findViewById(R.id.queueButton)
         speedControl = findViewById(R.id.speedControl)
@@ -129,12 +133,6 @@ class SettingsActivity : AppCompatActivity() {
         colorButton1 = findViewById(R.id.colorOption1)
         colorButton2 = findViewById(R.id.colorOption2)
         colorButton3 = findViewById(R.id.colorOption3)
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
 
         val intent : Intent = intent
         if (intent.hasExtra("valid")) {
@@ -151,6 +149,10 @@ class SettingsActivity : AppCompatActivity() {
         bindService()
 
         backButton.setOnClickListener {
+            endActivity()
+        }
+
+        titleText.setOnClickListener {
             endActivity()
         }
 

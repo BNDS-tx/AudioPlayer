@@ -135,22 +135,20 @@ class UIAdapter(private val activity: PlayActivity) {
     private fun updateTextColor(color: Int, darkColor: Int, lightColor: Int) {
         val type = checkLight(color)
         if (type == 1) {
-            activity.titleText.setTextColor(darkColor)
             activity.showSpeed.setTextColor(darkColor)
             val drawablesS = activity.speedSlower.compoundDrawablesRelative
             val drawablesF = activity.speedFaster.compoundDrawablesRelative
             val drawableEnd = drawablesS[2]
             val drawableStart = drawablesF[0]
-            if (drawableEnd != null) {
-                drawableEnd.setTint(darkColor)
-                drawableStart.setTint(darkColor)
-                activity.speedSlower.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    drawablesS[0], drawablesS[1], drawableEnd, drawablesS[3]
-                )
-                activity.speedFaster.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    drawableStart, drawablesF[1], drawablesF[2], drawablesF[3]
-                )
-            }
+
+            drawableEnd.setTint(darkColor)
+            drawableStart.setTint(darkColor)
+            activity.speedSlower.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                drawablesS[0], drawablesS[1], drawableEnd, drawablesS[3]
+            )
+            activity.speedFaster.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                drawableStart, drawablesF[1], drawablesF[2], drawablesF[3]
+            )
 
             val insetsController = activity.window.insetsController
             insetsController?.setSystemBarsAppearance(
@@ -158,22 +156,20 @@ class UIAdapter(private val activity: PlayActivity) {
                 WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
             )
         } else {
-            activity.titleText.setTextColor(lightColor)
             activity.showSpeed.setTextColor(lightColor)
             val drawablesS = activity.speedSlower.compoundDrawablesRelative
             val drawablesF = activity.speedFaster.compoundDrawablesRelative
             val drawableEnd = drawablesS[2]
             val drawableStart = drawablesF[0]
-            if (drawableEnd != null) {
-                drawableEnd.setTint(lightColor)
-                drawableStart.setTint(lightColor)
-                activity.speedSlower.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    drawablesS[0], drawablesS[1], drawableEnd, drawablesS[3]
-                )
-                activity.speedFaster.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    drawableStart, drawablesF[1], drawablesF[2], drawablesF[3]
-                )
-            }
+
+            drawableEnd.setTint(lightColor)
+            drawableStart.setTint(lightColor)
+            activity.speedSlower.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                drawablesS[0], drawablesS[1], drawableEnd, drawablesS[3]
+            )
+            activity.speedFaster.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                drawableStart, drawablesF[1], drawablesF[2], drawablesF[3]
+            )
 
             val insetsController = activity.window.insetsController
             insetsController?.setSystemBarsAppearance(
@@ -196,19 +192,18 @@ class UIAdapter(private val activity: PlayActivity) {
             .setCardBackgroundColor(colorPrimary)
         activity.findViewById<ImageView>(R.id.cardIcon)
             .setColorFilter(colorOnPrimary)
-        activity.backButton.backgroundTintList =
+        activity.titleBackground.backgroundTintList =
             if (setColor == colorPrimaryContainer)
                 ColorStateList.valueOf(colorPrimary)
             else color
-        activity.backButton.iconTint =
+        activity.titleText.setTextColor(
+            if (setColor == colorPrimaryContainer)
+                ColorStateList.valueOf(colorOnPrimary)
+            else iconColor)
+        activity.backButton.imageTintList =
             if (setColor == colorPrimaryContainer)
                 ColorStateList.valueOf(colorOnPrimary)
             else iconColor
-        activity.backButton.setTextColor(
-            if (setColor == colorPrimaryContainer)
-                ColorStateList.valueOf(colorOnPrimary)
-            else iconColor
-        )
         activity.bookMarkButton.backgroundTintList = color
         activity.bookMarkButton.iconTint = iconColor
         activity.bookMarkButton.setTextColor(iconColor)

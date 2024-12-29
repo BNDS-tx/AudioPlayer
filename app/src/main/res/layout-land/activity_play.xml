@@ -10,47 +10,55 @@
 
     <LinearLayout
         android:id="@+id/header"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:orientation="vertical"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.85">
+        android:layout_width="match_parent"
+        android:layout_height="135dp"
+        android:orientation="horizontal"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
+            android:layout_height="105dp"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:gravity="center"
-            android:orientation="horizontal">
+            android:gravity="center_vertical"
+            android:layout_gravity="start|bottom" >
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/backButton"
+            <androidx.cardview.widget.CardView
+                android:id="@+id/titleBackground"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/button_circle"
-                android:gravity="center"
-                android:text="@string/jump_back"
-                app:icon="@drawable/ic_arrow_back_24px"
-                app:iconSize="20dp"
-                android:paddingLeft="15dp"
-                android:paddingRight="15dp"/>
+                android:layout_height="75dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                app:cardCornerRadius="35dp"
+                app:cardElevation="10dp">
 
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/titleText"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:layout_marginStart="10dp"
-                android:text="@string/title_activity_player"
-                android:textSize="20sp"
-                android:singleLine="true"
-                android:ellipsize="marquee"
-                android:marqueeRepeatLimit="marquee_forever"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:scrollHorizontally="true"  />
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/titleText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:paddingStart="70dp"
+                    android:paddingEnd="30dp"
+                    android:padding="10dp"
+                    android:gravity="center"
+                    android:singleLine="true"
+                    android:ellipsize="marquee"
+                    android:marqueeRepeatLimit="marquee_forever"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:scrollHorizontally="true"
+                    android:text="@string/title_activity_player"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="30sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/backButton"
+                    android:layout_width="35dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="25dp"
+                    app:srcCompat="@drawable/ic_arrow_back_24px"
+                    app:tint="?attr/colorPrimary"/>
+            </androidx.cardview.widget.CardView>
         </LinearLayout>
     </LinearLayout>
 
@@ -207,7 +215,7 @@
         app:layout_constraintHorizontal_bias="0.2"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/header"
-        app:layout_constraintVertical_bias="0.5" >
+        app:layout_constraintVertical_bias="0.35" >
 
         <ImageView
             android:id="@+id/cardIcon"

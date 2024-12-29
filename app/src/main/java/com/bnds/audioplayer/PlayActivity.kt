@@ -18,12 +18,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.bnds.audioplayer.databinding.ActivityPlayBinding
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
 import com.google.android.material.textview.MaterialTextView
 import java.util.Locale
 
 open class PlayActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityPlayBinding
     private var speedVal: Float = 1F
     lateinit var musicPlayerService: PlayerService
     var musicSize: Int = 0
@@ -55,6 +57,7 @@ open class PlayActivity : AppCompatActivity() {
     lateinit var rootView: View
     lateinit var playButton: MaterialButton
     lateinit var bookMarkButton: MaterialButton
+    lateinit var backButton: ImageView
     lateinit var showSpeed: MaterialTextView
     lateinit var speedSlower: MaterialTextView
     lateinit var speedFaster: MaterialTextView
@@ -63,14 +66,15 @@ open class PlayActivity : AppCompatActivity() {
     lateinit var playMethodBackground: CardView
     lateinit var nextButton: MaterialButton
     lateinit var previousButton: MaterialButton
-    lateinit var backButton: MaterialButton
-    lateinit var titleText: androidx.appcompat.widget.AppCompatTextView
+    lateinit var titleText: MaterialTextView
+    lateinit var titleBackground: CardView
     lateinit var albumArt: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_play)
+        binding = ActivityPlayBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         val audioUri: Uri? = intent.data
         if (audioUri != null) openFromFile = audioUri
@@ -192,6 +196,10 @@ open class PlayActivity : AppCompatActivity() {
             endActivity()
         }
 
+        titleText.setOnClickListener {
+            endActivity()
+        }
+
         checkPlayProgress()
         updateShowSpeed()
         UIAdapter(this).updateUIGroup()
@@ -305,18 +313,21 @@ open class PlayActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        unbindService()
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setContentView(R.layout.activity_play)
         } else {
             setContentView(R.layout.activity_play)
         }
         initializeViews()
+        bindService()
     }
 
     private fun initializeViews() {
         rootView = findViewById<View>(R.id.main).rootView
         playButton = findViewById(R.id.playButton)
         bookMarkButton = findViewById(R.id.bookmarkButton)
+        backButton = findViewById(R.id.backButton)
         showSpeed = findViewById(R.id.speedShow)
         speedSlower = findViewById(R.id.speedSlower)
         speedFaster = findViewById(R.id.speedFaster)
@@ -325,8 +336,8 @@ open class PlayActivity : AppCompatActivity() {
         playMethodBackground = findViewById(R.id.methodIconBackground)
         nextButton = findViewById(R.id.playNextButton)
         previousButton = findViewById(R.id.playPreviousButton)
-        backButton = findViewById(R.id.backButton)
         titleText = findViewById(R.id.titleText)
+        titleBackground = findViewById(R.id.titleBackground)
         albumArt = findViewById(R.id.albumArt)
 
         titleText.isSelected = true
@@ -345,12 +356,6 @@ open class PlayActivity : AppCompatActivity() {
             }
         }
         setMethodVal(continuePlay, isInOrderQueue)
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->           // make the display view fitting the window
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
 
         bindService()                                                                               // bind service
 
