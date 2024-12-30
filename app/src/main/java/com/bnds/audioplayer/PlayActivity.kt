@@ -123,7 +123,7 @@ open class PlayActivity : AppCompatActivity() {
                     break
                 }
             }
-        } else musicPlayerService.startPlaying(new, musicPosition, speedVal)
+        } else musicPlayerService.startPlaying(new, musicPosition, speedVal); new = false
 
         musicPosition = musicPlayerService.getThisPosition()
 
@@ -327,7 +327,6 @@ open class PlayActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         unbindService()
-        new = false
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setContentView(R.layout.activity_play)
         } else {
