@@ -29,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textview.MaterialTextView
-import java.util.concurrent.Executors
 
 class PlayListActivity : AppCompatActivity() {
 
@@ -69,7 +68,7 @@ class PlayListActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var musicAdapter: MusicAdapter
     private lateinit var refreshButton: MaterialButton
-    private lateinit var toPlayButton: MaterialButton
+    private lateinit var musicTitle: MaterialTextView
     private lateinit var titleText: MaterialTextView
     private lateinit var settingsButton: MaterialButton
     private lateinit var playButton: MaterialButton
@@ -205,7 +204,7 @@ class PlayListActivity : AppCompatActivity() {
         if ((musicPosition != -1 || mediaPlayerService.stateCheck(1)) &&
             musicPosition != mediaPlayerService.getThisPosition()) {
             musicPosition = mediaPlayerService.getThisPosition()
-            toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
+            musicTitle.text = mediaPlayerService.getPositionTitle(musicPosition)
             titleText.text = mediaPlayerService.getPositionTitle(musicPosition)
             setImage()
         }
@@ -279,15 +278,11 @@ class PlayListActivity : AppCompatActivity() {
             setMethod(playMethodVal)
         }
 
-        setPlayingText()
-        toPlayButton.setOnClickListener {
-            openPlayActivity(musicPosition)
-        }
-
         playerButtonLayout.setOnClickListener {
             openPlayActivity(musicPosition)
         }
 
+        setPlayingText()
         checkPlayProgress()
         setIcon()
         setImage()
@@ -302,7 +297,7 @@ class PlayListActivity : AppCompatActivity() {
     private fun initializeViews() {
         recyclerView = findViewById(R.id.playListRecyclerView)
         refreshButton = findViewById(R.id.refreshButton)
-        toPlayButton = findViewById(R.id.jumpToPlayButton)
+        musicTitle = findViewById(R.id.musicTitle)
         titleText = findViewById(R.id.page_title)
         settingsButton = findViewById(R.id.settingsButton)
         playButton = findViewById(R.id.playButton)
@@ -462,14 +457,14 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun setPlayingText() {
         if (musicPosition != -1 && mediaPlayerService.getProgress() > 0) {
-            toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
+            musicTitle.text = mediaPlayerService.getPositionTitle(musicPosition)
             titleText.text = mediaPlayerService.getPositionTitle(musicPosition)
         } else if (mediaPlayerService.stateCheck(1)) {
             musicPosition = mediaPlayerService.getThisPosition()
-            toPlayButton.text = mediaPlayerService.getPositionTitle(musicPosition)
+            musicTitle.text = mediaPlayerService.getPositionTitle(musicPosition)
             titleText.text = mediaPlayerService.getPositionTitle(musicPosition)
         } else {
-            toPlayButton.text = if (musicPosition == -1) getString(R.string.defualt_playing)
+            musicTitle.text = if (musicPosition == -1) getString(R.string.defualt_playing)
             else "..."
             titleText.text = getString(R.string.title_activity_play_list)
         }
@@ -493,7 +488,6 @@ class PlayListActivity : AppCompatActivity() {
     private fun setUsability(switch: Boolean) {
         playButton.isEnabled = switch
         skipNextButton.isEnabled = switch
-        toPlayButton.isEnabled = switch
     }
 
     private fun sharedPreferencesSaveData() {

@@ -110,21 +110,21 @@
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="420dp"
-        android:layout_height="215dp"
+        android:layout_width="460dp"
+        android:layout_height="235dp"
         android:layout_gravity="bottom|end"
         android:layout_marginBottom="-80dp"
-        android:layout_marginEnd="60dp"
-        android:background="@drawable/button_page"
-        android:backgroundTint="?attr/colorPrimaryContainer">
+        android:layout_marginEnd="60dp">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent">
+            android:layout_marginTop="20dp"
+            android:layout_marginStart="40dp"
+            android:layout_marginEnd="40dp"
+            app:cardCornerRadius="35dp"
+            app:cardElevation="20dp"
+            android:backgroundTint="?attr/colorPrimaryContainer" >
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -132,88 +132,125 @@
                 android:id="@+id/playButtonLayout">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="85dp"
-                    android:layout_height="85dp"
-                    android:layout_marginTop="25dp"
-                    android:layout_marginStart="20dp" >
+                    android:layout_width="125dp"
+                    android:layout_height="match_parent" >
 
                     <com.google.android.material.card.MaterialCardView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        app:cardCornerRadius="23dp">
+                        android:layout_width="85dp"
+                        android:layout_height="85dp"
+                        android:layout_marginTop="25dp"
+                        android:layout_marginStart="20dp"
+                        android:backgroundTint="?attr/colorSurface"
+                        app:cardCornerRadius="23dp"
+                        app:cardElevation="15dp"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
 
                         <ImageView
                             android:id="@+id/playButtonImage"
                             android:layout_height="match_parent"
                             android:layout_width="match_parent" />
-                    </com.google.android.material.card.MaterialCardView>
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/playButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/button_square"
-                        app:iconSize="55dp"
-                        app:iconTint="?attr/colorPrimary"
-                        android:padding="15dp" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/playButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/button_square"
+                            app:iconSize="55dp"
+                            app:iconTint="?attr/colorPrimary"
+                            android:padding="15dp" />
+                    </com.google.android.material.card.MaterialCardView>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/jumpToPlayButton"
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    app:backgroundTint="?attr/colorPrimaryContainer"
-                    android:textColor="?attr/colorOnPrimaryContainer"
-                    android:textSize="20sp"
-                    android:background="@drawable/button_page"
-                    android:gravity="top"
-                    android:padding="25dp"
-                    android:paddingStart="20dp"
-                    android:paddingEnd="30dp"
-                    android:ellipsize="end"
-                    android:singleLine="true"
-                    android:layout_gravity="center_horizontal|bottom" />
+                    android:layout_height="match_parent">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@id/musicTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="25dp"
+                        android:layout_marginEnd="25dp"
+                        android:textColor="?attr/colorOnPrimaryContainer"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:ellipsize="end"
+                        android:singleLine="true"
+                        app:layout_constraintLeft_toLeftOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"/>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="65dp"
+                        android:layout_marginEnd="20dp"
+                        app:cardCornerRadius="23dp"
+                        app:cardElevation="30dp"
+                        android:backgroundTint="?attr/colorPrimary"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/settingsButton"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:backgroundTint="#00000000"
+                            app:icon="@drawable/ic_settings_24px"
+                            app:iconSize="26dp"
+                            android:padding="12dp"
+                            app:layout_constraintRight_toRightOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.cardview.widget.CardView>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="65dp"
+                        android:layout_marginEnd="80dp"
+                        app:cardCornerRadius="23dp"
+                        app:cardElevation="30dp"
+                        android:backgroundTint="?attr/colorPrimary"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/skipToNextButton"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:backgroundTint="#00000000"
+                            app:icon="@drawable/ic_skip_next_24px"
+                            app:iconSize="26dp"
+                            android:padding="12dp"
+                            app:layout_constraintRight_toRightOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.cardview.widget.CardView>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="65dp"
+                        android:layout_marginEnd="140dp"
+                        app:cardCornerRadius="23dp"
+                        app:cardElevation="30dp"
+                        android:backgroundTint="?attr/colorPrimary"
+                        app:layout_constraintRight_toRightOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/playMethodButton"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:backgroundTint="#00000000"
+                            app:icon="@drawable/ic_play_once"
+                            app:iconSize="26dp"
+                            android:padding="12dp"
+                            app:layout_constraintRight_toRightOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.cardview.widget.CardView>
+                </androidx.constraintlayout.widget.ConstraintLayout>
             </LinearLayout>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/settingsButton"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_marginTop="70dp"
-                android:layout_marginEnd="20dp"
-                android:background="@drawable/button_circle"
-                app:icon="@drawable/ic_settings_24px"
-                app:iconSize="26dp"
-                android:padding="12dp"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/skipToNextButton"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_marginTop="70dp"
-                android:layout_marginEnd="80dp"
-                android:background="@drawable/button_circle"
-                app:icon="@drawable/ic_skip_next_24px"
-                app:iconSize="26dp"
-                android:padding="12dp"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/playMethodButton"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_marginTop="70dp"
-                android:layout_marginEnd="140dp"
-                android:background="@drawable/button_circle"
-                app:icon="@drawable/ic_play_once"
-                app:iconSize="26dp"
-                android:padding="12dp"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.cardview.widget.CardView>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

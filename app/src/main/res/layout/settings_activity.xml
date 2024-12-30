@@ -38,12 +38,6 @@
                     android:paddingEnd="30dp"
                     android:padding="10dp"
                     android:gravity="center"
-                    android:singleLine="true"
-                    android:ellipsize="marquee"
-                    android:marqueeRepeatLimit="marquee_forever"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true"
-                    android:scrollHorizontally="true"
                     android:text="@string/title_activity_settings"
                     android:textColor="?attr/colorPrimary"
                     android:textSize="30sp"
@@ -64,149 +58,109 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:layout_marginTop="5dp"
+        android:layout_marginStart="@dimen/text_margin"
+        android:layout_marginEnd="@dimen/text_margin"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
         android:orientation="horizontal"
-        android:gravity="center_horizontal">
+        android:gravity="center"
+        android:background="@drawable/card_background_1">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="0dp"
-            android:layout_weight="0.075"
-            android:layout_height="match_parent"/>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_weight="0.85"
+            android:layout_weight="1"
             android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/card_background_1">
+            android:gravity="center_vertical"
+            android:text="@string/continue_play"
+            android:layout_marginStart="5dp"/>
 
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:text="@string/continue_play"
-                android:layout_marginEnd="5dp"
-                android:layout_marginStart="5dp"/>
-
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/connectButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"/>
-        </LinearLayout>
-        <TextView
-            android:layout_width="0dp"
-            android:layout_weight="0.075"
-            android:layout_height="match_parent"/>
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/connectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"/>
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:layout_marginTop="15dp"
+        android:layout_marginStart="@dimen/text_margin"
+        android:layout_marginEnd="@dimen/text_margin"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
         android:orientation="horizontal"
-        android:gravity="center_horizontal">
+        android:gravity="center"
+        android:background="@drawable/card_background_1">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="0dp"
-            android:layout_weight="0.075"
-            android:layout_height="match_parent"/>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_weight="0.85"
+            android:layout_weight="1"
             android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/card_background_1">
+            android:gravity="center_vertical"
+            android:text="@string/disInOrder_play"
+            android:layout_marginEnd="5dp"
+            android:layout_marginStart="5dp"/>
 
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:text="@string/disInOrder_play"
-                android:layout_marginEnd="5dp"
-                android:layout_marginStart="5dp"/>
-
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/queueButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"/>
-        </LinearLayout>
-        <TextView
-            android:layout_width="0dp"
-            android:layout_weight="0.075"
-            android:layout_height="match_parent"/>
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/queueButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"/>
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:layout_marginTop="15dp"
+        android:layout_marginStart="@dimen/text_margin"
+        android:layout_marginEnd="@dimen/text_margin"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
         android:orientation="horizontal"
-        android:gravity="center_horizontal">
+        android:gravity="center"
+        android:background="@drawable/card_background_1">
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_weight="0.075"
-            android:layout_height="match_parent"/>
-
-        <LinearLayout
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="0dp"
             android:layout_weight="0.85"
             android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/card_background_1">
+            android:gravity="center_vertical"
+            android:text="@string/speed_play"
+            android:layout_marginEnd="5dp"
+            android:layout_marginStart="5dp"/>
 
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="0dp"
-                android:layout_weight="0.85"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:text="@string/speed_play"
-                android:layout_marginEnd="5dp"
-                android:layout_marginStart="5dp"/>
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/speedControl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            android:padding="1dp">
 
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/speedControl"
-                android:layout_width="wrap_content"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/speedOption1"
+                android:layout_width="70dp"
                 android:layout_height="wrap_content"
-                app:singleSelection="true"
-                android:padding="1dp">
+                android:text="@string/speed_1"
+                style="@style/Widget.Material3.Button.Segmented"
+                android:backgroundTint="@drawable/segmented_button_color"/>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/speedOption1"
-                    android:layout_width="70dp"
-                    android:layout_height="wrap_content"
-                    android:text="1X"
-                    style="@style/Widget.Material3.Button.Segmented"
-                    android:backgroundTint="@drawable/segmented_button_color"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/speedOption2"
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:text="@string/speed_2"
+                style="@style/Widget.Material3.Button.Segmented"
+                android:backgroundTint="@drawable/segmented_button_color"/>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/speedOption2"
-                    android:layout_width="70dp"
-                    android:layout_height="wrap_content"
-                    android:text="2X"
-                    style="@style/Widget.Material3.Button.Segmented"
-                    android:backgroundTint="@drawable/segmented_button_color"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/speedOption3"
-                    android:layout_width="70dp"
-                    android:layout_height="wrap_content"
-                    android:text="3X"
-                    style="@style/Widget.Material3.Button.Segmented"
-                    android:backgroundTint="@drawable/segmented_button_color"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/speedOption3"
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:text="@string/speed_3"
+                style="@style/Widget.Material3.Button.Segmented"
+                android:backgroundTint="@drawable/segmented_button_color"/>
         </com.google.android.material.button.MaterialButtonToggleGroup>
-        </LinearLayout>
-        <TextView
-            android:layout_width="0dp"
-            android:layout_weight="0.075"
-            android:layout_height="match_parent"/>
     </LinearLayout>
 
     <LinearLayout
@@ -214,7 +168,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
         android:orientation="horizontal"
-        android:gravity="center_horizontal">
+        android:gravity="center_horizontal"
+        android:visibility="gone" >
 
         <TextView
             android:layout_width="0dp"
@@ -228,8 +183,7 @@
             android:orientation="vertical"
             android:gravity="center"
             android:background="@drawable/card_background_1"
-            android:padding="0dp"
-            android:visibility="gone" >
+            android:padding="0dp" >
 
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"
