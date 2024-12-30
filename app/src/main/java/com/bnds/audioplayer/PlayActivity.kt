@@ -57,6 +57,7 @@ open class PlayActivity : AppCompatActivity() {
     lateinit var rootView: View
     lateinit var playButton: MaterialButton
     lateinit var bookMarkButton: MaterialButton
+    lateinit var bookMarkBackground: CardView
     lateinit var backButton: ImageView
     lateinit var showSpeed: MaterialTextView
     lateinit var speedSlower: MaterialTextView
@@ -327,6 +328,7 @@ open class PlayActivity : AppCompatActivity() {
         rootView = findViewById<View>(R.id.main).rootView
         playButton = findViewById(R.id.playButton)
         bookMarkButton = findViewById(R.id.bookmarkButton)
+        bookMarkBackground = findViewById(R.id.bookmarkButtonBackground)
         backButton = findViewById(R.id.backButton)
         showSpeed = findViewById(R.id.speedShow)
         speedSlower = findViewById(R.id.speedSlower)

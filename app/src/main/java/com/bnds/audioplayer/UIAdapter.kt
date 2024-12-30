@@ -204,14 +204,12 @@ class UIAdapter(private val activity: PlayActivity) {
             if (setColor == colorPrimaryContainer)
                 ColorStateList.valueOf(colorOnPrimary)
             else iconColor
-        activity.bookMarkButton.backgroundTintList = color
+        activity.bookMarkBackground.backgroundTintList = color
         activity.bookMarkButton.iconTint = iconColor
         activity.bookMarkButton.setTextColor(iconColor)
-        activity.playButton.backgroundTintList = color
-        activity.playButton.iconTint = iconColor
-        activity.nextButton.backgroundTintList = color
+        activity.playButton.backgroundTintList = iconColor
+        activity.playButton.iconTint = color
         activity.nextButton.iconTint = iconColor
-        activity.previousButton.backgroundTintList = color
         activity.previousButton.iconTint = iconColor
         activity.playMethodBackground.backgroundTintList = color
         activity.playMethodIcon.imageTintList = iconColor
