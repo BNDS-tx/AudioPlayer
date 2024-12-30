@@ -1,18 +1,13 @@
 package com.bnds.audioplayer
 
-import android.content.ComponentName
 import android.content.Intent
-import android.content.ServiceConnection
 import android.content.res.Configuration
 import android.os.Bundle
-import android.os.IBinder
 import android.view.View
 import android.widget.ImageView
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.materialswitch.MaterialSwitch
@@ -22,21 +17,6 @@ class SettingsActivity : AppCompatActivity() {
     private var speedVal: Float = 1F
     private var isConnect: Boolean = false
     private var isInOrderQueue: Boolean = true
-
-    private lateinit var playerService: PlayerService
-    private var isBound = false
-    private val connection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val binder = service as PlayerService.PlayerBinder
-            playerService = binder.getService()
-            isBound = true
-            moveContext()
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            isBound = false
-        }
-    }
 
     private lateinit var backButton: ImageView
     private lateinit var titleText: MaterialTextView
@@ -51,27 +31,12 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var colorButton2: MaterialButton
     private lateinit var colorButton3: MaterialButton
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.settings_activity)
 
         initializeViews()
-    }
-
-    private fun bindService() {
-        if (!isBound) {
-            val intent = Intent(this, PlayerService::class.java)
-            bindService(intent, connection, BIND_AUTO_CREATE)
-        }
-    }
-
-    private fun unbindService() {
-        if (isBound) {
-            unbindService(connection)
-            isBound = false
-        }
     }
 
     private fun playBackSpeedControl() {
@@ -95,10 +60,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun moveContext() { playerService.setContext(this) }
-
     private fun endActivity() {
-        unbindService()
         val intent2 = Intent()
         val transferData = Bundle()
         transferData.putFloat("Speed Values", speedVal)
@@ -111,7 +73,6 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        unbindService()
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setContentView(R.layout.settings_activity)
         } else {
@@ -145,8 +106,6 @@ class SettingsActivity : AppCompatActivity() {
                 }
             }
         }
-
-        bindService()
 
         backButton.setOnClickListener {
             endActivity()

@@ -5,8 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".PlayActivity"
-    android:backgroundTint="?attr/colorSurfaceInverse">
+    tools:context=".PlayActivity">
 
     <LinearLayout
         android:id="@+id/header"
@@ -29,6 +28,7 @@
                 android:layout_height="75dp"
                 android:layout_marginStart="20dp"
                 android:layout_marginEnd="20dp"
+                android:backgroundTint="?attr/colorPrimary"
                 app:cardCornerRadius="35dp"
                 app:cardElevation="10dp">
 
@@ -47,7 +47,7 @@
                     android:focusableInTouchMode="true"
                     android:scrollHorizontally="true"
                     android:text="@string/title_activity_player"
-                    android:textColor="?attr/colorPrimary"
+                    android:textColor="?attr/colorOnPrimary"
                     android:textSize="30sp"
                     android:textStyle="bold" />
 
@@ -57,7 +57,7 @@
                     android:layout_height="match_parent"
                     android:layout_marginStart="25dp"
                     app:srcCompat="@drawable/ic_arrow_back_24px"
-                    app:tint="?attr/colorPrimary"/>
+                    app:tint="?attr/colorOnPrimary"/>
             </androidx.cardview.widget.CardView>
         </LinearLayout>
     </LinearLayout>
@@ -164,6 +164,7 @@
                     android:backgroundTint="#00000000"
                     app:icon="@drawable/ic_skip_previous_24px"
                     app:iconSize="35dp"
+                    app:iconTint="?attr/colorPrimary"
                     android:padding="23dp" />
             </LinearLayout>
 
@@ -199,6 +200,7 @@
                     android:backgroundTint="#00000000"
                     app:icon="@drawable/ic_skip_next_24px"
                     app:iconSize="35dp"
+                    app:iconTint="?attr/colorPrimary"
                     android:padding="23dp" />
             </LinearLayout>
         </LinearLayout>
@@ -213,7 +215,7 @@
         android:layout_gravity="center"
         app:cardCornerRadius="30dp"
         app:cardElevation="15dp"
-        app:cardBackgroundColor="?attr/colorPrimaryContainer"
+        app:cardBackgroundColor="?attr/colorPrimary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.2"
@@ -226,6 +228,7 @@
             android:layout_width="130dp"
             android:layout_height="130dp"
             app:srcCompat="@drawable/ic_music_note_24px"
+            app:tint="?attr/colorOnPrimary"
             android:layout_gravity="center"/>
 
         <ImageView
@@ -242,6 +245,7 @@
             android:layout_gravity="bottom|start"
             android:layout_marginBottom="10dp"
             android:layout_marginStart="10dp"
+            android:backgroundTint="?attr/colorPrimaryContainer"
             app:cardCornerRadius="23dp"
             app:cardElevation="10dp" >
 
@@ -260,6 +264,7 @@
             android:layout_gravity="bottom|end"
             android:layout_marginBottom="10dp"
             android:layout_marginEnd="10dp"
+            android:backgroundTint="?attr/colorPrimaryContainer"
             app:cardCornerRadius="23dp"
             app:cardElevation="10dp">
 
@@ -268,6 +273,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 app:srcCompat="@drawable/ic_play_once"
+                app:tint="?attr/colorPrimary"
                 android:scaleType="centerInside"
                 android:adjustViewBounds="true" />
         </androidx.cardview.widget.CardView>

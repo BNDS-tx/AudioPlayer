@@ -16,8 +16,6 @@ import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.bnds.audioplayer.databinding.ActivityPlayBinding
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
@@ -79,6 +77,20 @@ open class PlayActivity : AppCompatActivity() {
 
         val audioUri: Uri? = intent.data
         if (audioUri != null) openFromFile = audioUri
+
+        val intent : Intent = intent
+        if (intent.hasExtra("valid")) {                                                       // receive bundle data pack from PlayListActivity
+            val transferData = intent.extras
+            transferData?.keySet()?.forEach { key ->
+                when (key) {
+                    "Speed Values" -> speedVal = transferData.getFloat(key)
+                    "musicPosition" -> musicPosition = transferData.getInt(key)
+                    "continuePlay" -> continuePlay = transferData.getBoolean(key)
+                    "isInOrderQueue" -> isInOrderQueue = transferData.getBoolean(key)
+                    "newSong" -> new = transferData.getBoolean(key)
+                }
+            }
+        }
 
         initializeViews()
     }
@@ -315,6 +327,7 @@ open class PlayActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         unbindService()
+        new = false
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setContentView(R.layout.activity_play)
         } else {
@@ -344,19 +357,6 @@ open class PlayActivity : AppCompatActivity() {
 
         titleText.isSelected = true
 
-        val intent : Intent = intent
-        if (intent.hasExtra("valid")) {                                                       // receive bundle data pack from PlayListActivity
-            val transferData = intent.extras
-            transferData?.keySet()?.forEach { key ->
-                when (key) {
-                    "Speed Values" -> speedVal = transferData.getFloat(key)
-                    "musicPosition" -> musicPosition = transferData.getInt(key)
-                    "continuePlay" -> continuePlay = transferData.getBoolean(key)
-                    "isInOrderQueue" -> isInOrderQueue = transferData.getBoolean(key)
-                    "newSong" -> new = transferData.getBoolean(key)
-                }
-            }
-        }
         setMethodVal(continuePlay, isInOrderQueue)
 
         bindService()                                                                               // bind service
@@ -382,17 +382,17 @@ open class PlayActivity : AppCompatActivity() {
     private fun setMethod(method: Int) {
         if (method == 0) {
             continuePlay = false
-            musicPlayerService.setContinues(continuePlay)
+            musicPlayerService.setContinues(false)
         } else {
             continuePlay = true
-            musicPlayerService.setContinues(continuePlay)
+            musicPlayerService.setContinues(true)
         }
         if (method == 2) {
             isInOrderQueue = false
-            musicPlayerService.setInOrderQueue(isInOrderQueue)
+            musicPlayerService.setInOrderQueue(false)
         } else {
             isInOrderQueue = true
-            musicPlayerService.setInOrderQueue(isInOrderQueue)
+            musicPlayerService.setInOrderQueue(true)
         }
     }
 

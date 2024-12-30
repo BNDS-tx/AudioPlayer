@@ -525,7 +525,7 @@ class PlayListActivity : AppCompatActivity() {
             override fun onGlobalLayout() {
                 recyclerView.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 mediaPlayerService.setMusicList(musicAdapter.getList())
-                handler.postDelayed({ dialogClose() }, (5 * musicSize).toLong())
+                handler.postDelayed({ dialogClose() }, (4 * musicSize).toLong())
             }
         })
     }
@@ -537,7 +537,7 @@ class PlayListActivity : AppCompatActivity() {
                 mediaPlayerService.getMusicList().indexOfFirst { it.id == id }.takeIf { it != -1 }!!
             )
         }
-        handler.postDelayed({ dialogClose() }, (2 * musicSize).toLong())
+        handler.postDelayed({ dialogClose() }, musicSize.toLong())
         var removeList =  mutableListOf<Long>()
         for (id in bookMarker.keys) {
             if (bookMarker[id] == 0L) removeList.add(id)
