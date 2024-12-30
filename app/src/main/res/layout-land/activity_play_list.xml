@@ -140,7 +140,7 @@
                         android:layout_height="85dp"
                         android:layout_marginTop="25dp"
                         android:layout_marginStart="20dp"
-                        android:backgroundTint="?attr/colorSurface"
+                        android:backgroundTint="?attr/colorSurfaceContainer"
                         app:cardCornerRadius="23dp"
                         app:cardElevation="15dp"
                         app:layout_constraintLeft_toLeftOf="parent"
