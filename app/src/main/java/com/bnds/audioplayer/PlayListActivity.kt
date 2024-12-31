@@ -1,6 +1,5 @@
 package com.bnds.audioplayer
 
-import android.app.Dialog
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
@@ -76,7 +75,6 @@ class PlayListActivity : AppCompatActivity() {
     private lateinit var playButtonImage: ImageView
     private lateinit var skipNextButton: MaterialButton
     private lateinit var playMethodButton: MaterialButton
-    private lateinit var loadingDialog: Dialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,7 +108,6 @@ class PlayListActivity : AppCompatActivity() {
                 }
             }
             if (result.resultCode == RESULT_FIRST_USER) {
-                dialogShow()
                 updateMusicMarker()
             }
         }
@@ -220,14 +217,6 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
-    private fun dialogShow() {
-        if (!loadingDialog.isShowing) loadingDialog.show()
-    }
-
-    private fun dialogClose() {
-        if (loadingDialog.isShowing) loadingDialog.dismiss()
-    }
-
     private fun handleMusicPlayback() {
         adapterBuilder()
         if (isNewOpen) {
@@ -306,13 +295,6 @@ class PlayListActivity : AppCompatActivity() {
         skipNextButton = findViewById(R.id.skipToNextButton)
         playMethodButton = findViewById(R.id.playMethodButton)
 
-        loadingDialog = Dialog(this).apply {
-            setContentView(R.layout.dialog_loading) // 自定义布局
-            window?.setBackgroundDrawableResource(android.R.color.transparent) // 背景透明
-            setCancelable(false) // 禁止手动取消
-            handler.postDelayed({ if (loadingDialog.isShowing) dismiss() }, 5000)
-        }
-
         setTitle(R.string.title_activity_play_list)
 
         val intent = Intent(this, PlayerService::class.java)
@@ -320,7 +302,6 @@ class PlayListActivity : AppCompatActivity() {
         if (hasPermissions()) {
             startService(intent)
             bindService(intent)
-            dialogShow()
         } else {
             requestPermissions()
         }
@@ -513,8 +494,7 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun updateMusicList() {
         if (isNewOpen) recyclerView.adapter = musicAdapter
-        else dialogShow()
-        val oldMusicList = mediaPlayerService.getMusicList()
+        val oldMusicList = musicAdapter.getList()
         loadData()
         val newMusicList = mediaPlayerService.getMusicList()
         val diffResult = DiffUtil.calculateDiff(MusicDiffCallback(oldMusicList, newMusicList))
@@ -525,7 +505,6 @@ class PlayListActivity : AppCompatActivity() {
             override fun onGlobalLayout() {
                 recyclerView.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 mediaPlayerService.setMusicList(musicAdapter.getList())
-                handler.postDelayed({ dialogClose() }, (4 * musicSize).toLong())
             }
         })
     }
@@ -537,7 +516,6 @@ class PlayListActivity : AppCompatActivity() {
                 mediaPlayerService.getMusicList().indexOfFirst { it.id == id }.takeIf { it != -1 }!!
             )
         }
-        handler.postDelayed({ dialogClose() }, musicSize.toLong())
         var removeList =  mutableListOf<Long>()
         for (id in bookMarker.keys) {
             if (bookMarker[id] == 0L) removeList.add(id)
