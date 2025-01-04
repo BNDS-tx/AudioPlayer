@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.Parcelable
 import android.util.TypedValue
 import android.view.ViewTreeObserver
 import android.widget.ImageView
@@ -66,6 +67,7 @@ class PlayListActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var musicAdapter: MusicAdapter
+    private var layoutManagerState: Parcelable? = null
     private lateinit var refreshButton: MaterialButton
     private lateinit var musicTitle: MaterialTextView
     private lateinit var titleText: MaterialTextView
@@ -141,6 +143,11 @@ class PlayListActivity : AppCompatActivity() {
         isDirectionChanged = true
         bindService(Intent(this, PlayerService::class.java))
         initializeViews()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        layoutManagerState = recyclerView.layoutManager?.onSaveInstanceState()
     }
 
     override fun onResume() {
@@ -223,6 +230,9 @@ class PlayListActivity : AppCompatActivity() {
             sharedPreferencesLoadData()
             updateMusicList()
             isNewOpen = false
+        }
+        if (layoutManagerState != null) {
+            recyclerView.layoutManager?.onRestoreInstanceState(layoutManagerState)
         }
         mediaPlayerService.setContext(this)
         mediaPlayerService.setContinues(continuePlay)
