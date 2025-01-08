@@ -2,6 +2,7 @@ package com.bnds.audioplayer
 
 import android.content.res.ColorStateList
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.util.TypedValue
 import android.view.WindowInsetsController
@@ -63,7 +64,9 @@ class UIAdapter(private val activity: PlayActivity) {
     private fun setColor() {
         val isDarkMode = (activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
-        var albumDominantColor = extractDominantColor()
+        var albumDominantColor =
+            if (activity.musicPosition == -1) 0
+            else extractDominantColor(activity.musicPlayerService.getThisAlbumArt())
         if (activity.musicSize == 0 || albumDominantColor == 0) {
             albumDominantColor = colorPrimaryContainer
         }
@@ -233,10 +236,9 @@ class UIAdapter(private val activity: PlayActivity) {
         return 0
     }
 
-    private fun extractDominantColor(): Int {
+    private fun extractDominantColor(albumArt: Bitmap?): Int {
         val defaultColor = 0
-        val albumArt = activity.musicPlayerService.getThisAlbumArt()
-        return if (albumArt != null && activity.musicPosition != -1) {
+        return if (albumArt != null) {
             val palette = Palette.from(albumArt).generate()
             palette.getDominantColor(defaultColor)
         } else {

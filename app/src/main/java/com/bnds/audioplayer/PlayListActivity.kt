@@ -134,6 +134,7 @@ class PlayListActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         unbindService()
+        layoutManagerState = recyclerView.layoutManager?.onSaveInstanceState()
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setContentView(R.layout.activity_play_list)
         } else {
@@ -406,13 +407,14 @@ class PlayListActivity : AppCompatActivity() {
         if (musicPosition == -1) return
         val bitmap = mediaPlayerService.getThisAlbumArt()
         playButtonImage.setImageBitmap(bitmap)
-        if (bitmap != null) playButton.setIconTintResource(R.color.white)
-        else {
-            val typedValue = TypedValue()
-            theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
-            val colorPrimary = typedValue.data
-            playButton.setIconTint(ColorStateList.valueOf(colorPrimary))
-        }
+        val typedValue = TypedValue()
+        theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
+        val colorPrimary = ColorStateList.valueOf(typedValue.data)
+        val colorWhite = ColorStateList.valueOf(getColor(R.color.white))
+        playButton.setIconTint(
+            if (bitmap != null) colorWhite
+            else colorPrimary
+        )
     }
 
     private fun setMethod(method: Int) {
