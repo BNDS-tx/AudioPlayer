@@ -48,7 +48,6 @@ class PlayerService : Service() {
         super.onCreate()
         mediaPlayer = ExoPlayer.Builder(this).build()
         initializeListener()
-//        musicList = Scanner(this).scanMusicFiles()
         playQueue.clear()
         playQueue = Array(musicList.size) { it }.toCollection(playQueue)
         Log.d("PlayerService", "Service created")
@@ -58,6 +57,7 @@ class PlayerService : Service() {
         setPlaybackState()
         updateNotification()
         updateInformation()
+        sharedPreferencesLoadData()
     }
 
     private fun initializeListener() {
@@ -309,12 +309,14 @@ class PlayerService : Service() {
         handler.removeCallbacksAndMessages(null)
         Log.d("PlayerService", "Service destroyed")
         mediaSession.release()
+        sharedPreferencesSaveData()
     }
 
     fun setContext(context: Context) { activityContext = context }
 
     fun setMusicList(list: List<Music>) {
         this.musicList = list
+        syncBookmark()
         playQueue.clear()
         playQueue = Array(musicList.size) { it }.toCollection(playQueue)
     }
@@ -484,17 +486,31 @@ class PlayerService : Service() {
     fun setBookmark() {
         if (!checkBookmark(musicList[musicListPosition].id)) {
             bookMarker[musicList[musicListPosition].id] = mediaPlayer?.currentPosition as Long
+            musicList[musicListPosition].bookMarker = mediaPlayer?.currentPosition
         } else {
-            bookMarker[musicList[musicListPosition].id] = 0
+            bookMarker.remove(musicList[musicListPosition].id)
+            musicList[musicListPosition].bookMarker = null
         }
     }
 
     fun setBookmark(id: Long, position: Long) {
         bookMarker[id] = position
+        musicList.find { it.id == id }?.bookMarker = position
     }
 
     fun removeBookmark(id: Long) {
         bookMarker.remove(id)
+        musicList.find { it.id == id }?.bookMarker = null
+    }
+
+    fun syncBookmark() {
+        for (music in musicList) {
+            if (bookMarker.containsKey(music.id)) {
+                music.bookMarker = bookMarker[music.id]
+            } else {
+                music.bookMarker = null
+            }
+        }
     }
 
     private fun updateInformation() {
@@ -545,5 +561,26 @@ class PlayerService : Service() {
 
     fun checkComplete(): Boolean {
         return mediaPlayer?.playbackState == Player.STATE_ENDED
+    }
+
+    private fun sharedPreferencesSaveData() {
+        val sharedPreferences = this.getSharedPreferences("bookmarks", MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        val bookmarkString = getBookmark().toString()
+        editor.putString("bookmarks", bookmarkString)
+        editor.apply()
+    }
+
+    private fun sharedPreferencesLoadData() {
+        val sharedPreferences = this.getSharedPreferences("bookmarks", MODE_PRIVATE)
+        var bookmarkString = sharedPreferences.getString("bookmarks", "")
+        bookmarkString = bookmarkString?.removeSurrounding("{", "}")
+        if (bookmarkString != null && bookmarkString.isNotBlank()) {
+            val entries = bookmarkString.split(",")
+            for (entry in entries) {
+                val (key, value) = entry.split("=")
+                setBookmark(key.trim().toLong(), value.trim().toLong())
+            }
+        }
     }
 }

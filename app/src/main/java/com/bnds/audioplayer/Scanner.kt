@@ -13,7 +13,8 @@ data class Music(
     val artist: String,
     val uri: Uri,
     val id: Long,
-    var albumArt: Bitmap? = null
+    var albumArt: Bitmap? = null,
+    var bookMarker: Long? = null
 )
 
 class Scanner(private val context: Context) {

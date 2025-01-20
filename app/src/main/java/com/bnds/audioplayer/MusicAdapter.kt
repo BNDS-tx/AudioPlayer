@@ -59,12 +59,16 @@ class MusicAdapter(
             val music = musicList[position - 1]
             holder.title.text = music.title
             holder.artist.text = music.artist
-            if (isNeedBookmark(music.id)) {
+            if (music.bookMarker != null && music.bookMarker!! > 0L) {
                 holder.bookmark.setCompoundDrawablesRelativeWithIntrinsicBounds(
                     0, 0, R.drawable.ic_bookmark_added_24px, 0
                 )
-                holder.bookmark.text = longToTime(bookMarker[music.id]!!)
-
+                holder.bookmark.text = longToTime(music.bookMarker!!)
+            } else {
+                holder.bookmark.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                    0, 0, 0, 0
+                )
+                holder.bookmark.text = ""
             }
 
             if (music.albumArt == null) {

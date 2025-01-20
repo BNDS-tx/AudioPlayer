@@ -13,7 +13,6 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Parcelable
 import android.util.TypedValue
-import android.view.ViewTreeObserver
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -159,7 +158,6 @@ class PlayListActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        sharedPreferencesSaveData()
         val intent = Intent(this, PlayerService::class.java)
         unbindService()
         stopService(intent)
@@ -228,7 +226,6 @@ class PlayListActivity : AppCompatActivity() {
     private fun handleMusicPlayback() {
         adapterBuilder()
         if (isNewOpen) {
-            sharedPreferencesLoadData()
             updateMusicList()
             isNewOpen = false
         }
@@ -483,27 +480,6 @@ class PlayListActivity : AppCompatActivity() {
         skipNextButton.isEnabled = switch
     }
 
-    private fun sharedPreferencesSaveData() {
-        val sharedPreferences = this.getSharedPreferences("bookmarks", MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        val bookmarkString = mediaPlayerService.getBookmark().toString()
-        editor.putString("bookmarks", bookmarkString)
-        editor.apply()
-    }
-
-    private fun sharedPreferencesLoadData() {
-        val sharedPreferences = this.getSharedPreferences("bookmarks", MODE_PRIVATE)
-        var bookmarkString = sharedPreferences.getString("bookmarks", "")
-        bookmarkString = bookmarkString?.removeSurrounding("{", "}")
-        if (bookmarkString != null && bookmarkString.isNotBlank()) {
-            val entries = bookmarkString.split(",")
-            for (entry in entries) {
-                val (key, value) = entry.split("=")
-                mediaPlayerService.setBookmark(key.trim().toLong(), value.trim().toLong())
-            }
-        }
-    }
-
     private fun updateMusicList() {
         if (isNewOpen) recyclerView.adapter = musicAdapter
         val oldMusicList = musicAdapter.getList()
@@ -512,13 +488,6 @@ class PlayListActivity : AppCompatActivity() {
         val diffResult = DiffUtil.calculateDiff(MusicDiffCallback(oldMusicList, newMusicList))
         musicAdapter.setList(newMusicList)
         diffResult.dispatchUpdatesTo(musicAdapter)
-
-        recyclerView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                recyclerView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                mediaPlayerService.setMusicList(musicAdapter.getList())
-            }
-        })
     }
 
     private fun updateMusicMarker() {
