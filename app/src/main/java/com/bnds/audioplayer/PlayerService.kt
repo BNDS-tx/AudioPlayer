@@ -309,7 +309,6 @@ class PlayerService : Service() {
         handler.removeCallbacksAndMessages(null)
         Log.d("PlayerService", "Service destroyed")
         mediaSession.release()
-        sharedPreferencesSaveData()
     }
 
     fun setContext(context: Context) { activityContext = context }
@@ -328,6 +327,12 @@ class PlayerService : Service() {
         playQueue.clear()
         playQueue = Array(musicList.size) { it }.toCollection(playQueue)
     }
+
+    fun getContinues(): Boolean = isContinue
+
+    fun getInOrderQueue(): Boolean = isInOrderQueue
+
+    fun getPlaybackSpeed(): Float = playbackSpeed
 
     fun getMusicList(): List<Music> = musicList
 
@@ -506,10 +511,12 @@ class PlayerService : Service() {
     fun syncBookmark() {
         for (music in musicList) {
             if (bookMarker.containsKey(music.id)) {
-                music.bookMarker = bookMarker[music.id]
-            } else {
-                music.bookMarker = null
-            }
+                bookMarker[music.id]?.let { if (it > 0L) music.bookMarker = it }
+            } else { music.bookMarker = null }
+        }
+
+        for (id in bookMarker.keys) {
+            if (!musicList.any { it.id == id }) { bookMarker.remove(id) }
         }
     }
 
@@ -547,32 +554,17 @@ class PlayerService : Service() {
     }
 
     private fun checkBookmark(id: Long) : Boolean {
-        if (bookMarker.isEmpty()) {
-            return false
-        }
-        if (!bookMarker.containsKey(id)) {
-            return false
-        }
-        if (bookMarker[id] == 0.toLong()) {
-            return false
-        }
-        return true
+        return !(bookMarker.isEmpty() ||
+                !bookMarker.containsKey(id) ||
+                bookMarker[id]!! <= 0L)
     }
 
     fun checkComplete(): Boolean {
         return mediaPlayer?.playbackState == Player.STATE_ENDED
     }
 
-    private fun sharedPreferencesSaveData() {
-        val sharedPreferences = this.getSharedPreferences("bookmarks", MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        val bookmarkString = getBookmark().toString()
-        editor.putString("bookmarks", bookmarkString)
-        editor.apply()
-    }
-
     private fun sharedPreferencesLoadData() {
-        val sharedPreferences = this.getSharedPreferences("bookmarks", MODE_PRIVATE)
+        val sharedPreferences = this.getSharedPreferences("SettingsPrefs", MODE_PRIVATE)
         var bookmarkString = sharedPreferences.getString("bookmarks", "")
         bookmarkString = bookmarkString?.removeSurrounding("{", "}")
         if (bookmarkString != null && bookmarkString.isNotBlank()) {

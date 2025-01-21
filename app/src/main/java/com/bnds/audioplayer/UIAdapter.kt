@@ -1,14 +1,11 @@
 package com.bnds.audioplayer
 
-import android.content.res.ColorStateList
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.graphics.Color
 import android.util.TypedValue
-import android.view.WindowInsetsController
 import android.widget.ImageView
 import androidx.cardview.widget.CardView
-import androidx.palette.graphics.Palette
+import com.bnds.audioplayer.uiTools.ColorTools
+import com.bnds.audioplayer.uiTools.IconTools
 import com.google.android.material.slider.Slider
 
 class UIAdapter(private val activity: PlayActivity) {
@@ -66,24 +63,46 @@ class UIAdapter(private val activity: PlayActivity) {
                 Configuration.UI_MODE_NIGHT_YES
         var albumDominantColor =
             if (activity.musicPosition == -1) 0
-            else extractDominantColor(activity.musicPlayerService.getThisAlbumArt())
-        if (activity.musicSize == 0 || albumDominantColor == 0) {
-            albumDominantColor = colorPrimaryContainer
-        }
-        activity.rootView.setBackgroundColor(albumDominantColor)
-        if (albumDominantColor != colorPrimaryContainer) {
-            updateButtonColor(albumDominantColor)
-        } else {
-            updateButtonColor(colorPrimaryContainer)
-        }
-        updateBarColor(
-            lightenColor(albumDominantColor),
-            darkenColor(albumDominantColor)
+            else if (activity.musicSize == 0) 0
+            else ColorTools().extractDominantColor(activity.musicPlayerService.getThisAlbumArt())
+        ColorTools().updatePageColor(
+            albumDominantColor,
+            activity.rootView,
+            activity.findViewById<CardView>(R.id.albumCard),
+            activity.findViewById<ImageView>(R.id.cardIcon),
+            activity.titleBackground,
+            activity.titleText,
+            activity.backButton,
+            activity.bookMarkBackground,
+            activity.bookMarkButton,
+            activity.playButton,
+            activity.nextButton,
+            activity.previousButton,
+            activity.playMethodBackground,
+            activity.playMethodIcon,
+            activity
         )
+        ColorTools().setBarColor(activity.progressBar, albumDominantColor)
         if (isDarkMode) {
-            updateTextColor(albumDominantColor, colorOnSurfaceInverse, colorOnSurface)
+            ColorTools().updateTextsColor(
+                albumDominantColor,
+                colorOnSurfaceInverse,
+                colorOnSurface,
+                activity.speedSlower,
+                activity.speedFaster,
+                activity.showSpeed,
+                activity
+            )
         } else {
-            updateTextColor(albumDominantColor, colorOnSurface, colorOnSurfaceInverse)
+            ColorTools().updateTextsColor(
+                albumDominantColor,
+                colorOnSurface,
+                colorOnSurfaceInverse,
+                activity.speedSlower,
+                activity.speedFaster,
+                activity.showSpeed,
+                activity
+            )
         }
     }
 
@@ -111,162 +130,14 @@ class UIAdapter(private val activity: PlayActivity) {
     }
 
     fun setIcon() {
-        if (activity.musicPlayerService.stateCheck(1)) {
-            activity.playButton.setIconResource(R.drawable.ic_pause_circle_24px)
-        } else {
-            activity.playButton.setIconResource(R.drawable.ic_play_arrow_24px)
-        }
+        IconTools().setPlayIcon(activity.playButton, activity.musicPlayerService.stateCheck(1))
         if (activity.musicPosition >= 0) {
-            if (activity.checkBookmark(
+            IconTools().setBookmarkIcon(activity.bookMarkButton,
+                activity.bookMarker[
                     activity.musicPlayerService.getPositionId(activity.musicPosition)
-            )) {
-                activity.bookMarkButton.setIconResource(R.drawable.ic_bookmark_check_24px)
-                activity.bookMarkButton.text =
-                    activity.bookMarker[
-                        activity.musicPlayerService.getPositionId(activity.musicPosition)
-                    ]?.let { activity.longToTime(it) }
-            } else {
-                activity.bookMarkButton.setIconResource(R.drawable.ic_bookmark_add_24px)
-                activity.bookMarkButton.text = "--:--"
-            }
+            ])
         } else {
-            activity.bookMarkButton.setIconResource(R.drawable.ic_bookmark_add_24px)
-            activity.bookMarkButton.text = "--:--"
+            IconTools().setBookmarkIcon(activity.bookMarkButton, null)
         }
-    }
-
-    private fun updateTextColor(color: Int, darkColor: Int, lightColor: Int) {
-        val type = checkLight(color)
-        if (type == 1) {
-            activity.showSpeed.setTextColor(darkColor)
-            val drawablesS = activity.speedSlower.compoundDrawablesRelative
-            val drawablesF = activity.speedFaster.compoundDrawablesRelative
-            val drawableEnd = drawablesS[2]
-            val drawableStart = drawablesF[0]
-
-            drawableEnd.setTint(darkColor)
-            drawableStart.setTint(darkColor)
-            activity.speedSlower.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                drawablesS[0], drawablesS[1], drawableEnd, drawablesS[3]
-            )
-            activity.speedFaster.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                drawableStart, drawablesF[1], drawablesF[2], drawablesF[3]
-            )
-
-            val insetsController = activity.window.insetsController
-            insetsController?.setSystemBarsAppearance(
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-            )
-        } else {
-            activity.showSpeed.setTextColor(lightColor)
-            val drawablesS = activity.speedSlower.compoundDrawablesRelative
-            val drawablesF = activity.speedFaster.compoundDrawablesRelative
-            val drawableEnd = drawablesS[2]
-            val drawableStart = drawablesF[0]
-
-            drawableEnd.setTint(lightColor)
-            drawableStart.setTint(lightColor)
-            activity.speedSlower.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                drawablesS[0], drawablesS[1], drawableEnd, drawablesS[3]
-            )
-            activity.speedFaster.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                drawableStart, drawablesF[1], drawablesF[2], drawablesF[3]
-            )
-
-            val insetsController = activity.window.insetsController
-            insetsController?.setSystemBarsAppearance(
-                0,
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-            )
-        }
-    }
-
-    private fun updateButtonColor(setColor: Int) {
-        val color =ColorStateList.valueOf(setColor)
-        val iconColor = if (setColor == colorPrimaryContainer) {
-            ColorStateList.valueOf(colorPrimary)
-        } else if (checkLight(setColor) == 1) {
-            ColorStateList.valueOf(activity.getColor(R.color.black))
-        } else {
-            ColorStateList.valueOf(activity.getColor(R.color.white))
-        }
-        activity.findViewById<CardView>(R.id.albumCard)
-            .setCardBackgroundColor(colorPrimary)
-        activity.findViewById<ImageView>(R.id.cardIcon)
-            .setColorFilter(colorOnPrimary)
-        activity.titleBackground.backgroundTintList =
-            if (setColor == colorPrimaryContainer)
-                ColorStateList.valueOf(colorPrimary)
-            else color
-        activity.titleText.setTextColor(
-            if (setColor == colorPrimaryContainer)
-                ColorStateList.valueOf(colorOnPrimary)
-            else iconColor)
-        activity.backButton.imageTintList =
-            if (setColor == colorPrimaryContainer)
-                ColorStateList.valueOf(colorOnPrimary)
-            else iconColor
-        activity.bookMarkBackground.backgroundTintList = color
-        activity.bookMarkButton.iconTint = iconColor
-        activity.bookMarkButton.setTextColor(iconColor)
-        activity.playButton.backgroundTintList = iconColor
-        activity.playButton.iconTint = color
-        activity.nextButton.iconTint = iconColor
-        activity.previousButton.iconTint = iconColor
-        activity.playMethodBackground.backgroundTintList = color
-        activity.playMethodIcon.imageTintList = iconColor
-    }
-
-    private fun updateBarColor(vibrantColor: Int, mutedColor: Int) {
-        activity.progressBar.trackActiveTintList = ColorStateList.valueOf(vibrantColor)
-        activity.progressBar.trackInactiveTintList = ColorStateList.valueOf(mutedColor)
-        activity.progressBar.thumbTintList = ColorStateList.valueOf(vibrantColor)
-    }
-
-    private fun checkLight(color: Int): Int {
-        val red = (color shr 16) and 0xFF
-        val green = (color shr 8) and 0xFF
-        val blue = color and 0xFF
-
-        val brightness = (0.299 * red + 0.587 * green + 0.114 * blue) / 255
-        if (brightness > 0.5) {
-            return 1
-        }
-        return 0
-    }
-
-    private fun extractDominantColor(albumArt: Bitmap?): Int {
-        val defaultColor = 0
-        return if (albumArt != null) {
-            val palette = Palette.from(albumArt).generate()
-            palette.getDominantColor(defaultColor)
-        } else {
-            defaultColor
-        }
-    }
-
-    private fun lightenColor(color: Int): Int {
-        val red = Color.red(color)
-        val green = Color.green(color)
-        val blue = Color.blue(color)
-
-        val newRed = (red + (255 - red) * 0.6).toInt()
-        val newGreen = (green + (255 - green) * 0.6).toInt()
-        val newBlue = (blue + (255 - blue) * 0.6).toInt()
-
-        return Color.rgb(newRed, newGreen, newBlue)
-    }
-
-    private fun darkenColor(color: Int): Int {
-        val red = Color.red(color)
-        val green = Color.green(color)
-        val blue = Color.blue(color)
-
-        val newRed = (red * 0.6).toInt()
-        val newGreen = (green * 0.6).toInt()
-        val newBlue = (blue * 0.6).toInt()
-
-        return Color.rgb(newRed, newGreen, newBlue)
     }
 }

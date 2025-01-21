@@ -3,6 +3,7 @@ package com.bnds.audioplayer
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.content.res.Configuration
@@ -26,6 +27,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
+import com.bnds.audioplayer.uiTools.ColorTools
+import com.bnds.audioplayer.uiTools.IconTools
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textview.MaterialTextView
 
@@ -148,6 +151,7 @@ class PlayListActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         layoutManagerState = recyclerView.layoutManager?.onSaveInstanceState()
+        sharedPreferencesSaveData()
     }
 
     override fun onResume() {
@@ -158,9 +162,8 @@ class PlayListActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        val intent = Intent(this, PlayerService::class.java)
+        sharedPreferencesSaveData()
         unbindService()
-        stopService(intent)
         handler.removeCallbacksAndMessages(null)
     }
 
@@ -264,14 +267,14 @@ class PlayListActivity : AppCompatActivity() {
             playNextController(mediaPlayerService)
         }
 
-        setMethodIcon(playMethodButton)
+        IconTools().setMethodButtonIcon(playMethodButton, playMethodVal)
         playMethodButton.setOnClickListener {
             when (playMethodVal) {
                 0 -> playMethodVal = 1
                 1 -> playMethodVal = 2
                 2 -> playMethodVal = 0
             }
-            setMethodIcon(playMethodButton)
+            IconTools().setMethodButtonIcon(playMethodButton, playMethodVal)
             setMethod(playMethodVal)
         }
 
@@ -305,8 +308,10 @@ class PlayListActivity : AppCompatActivity() {
 
         setTitle(R.string.title_activity_play_list)
 
-        val intent = Intent(this, PlayerService::class.java)
+        sharedPreferencesLoadData()
+        ColorTools().initColors(this)
 
+        val intent = Intent(this, PlayerService::class.java)
         if (hasPermissions()) {
             startService(intent)
             bindService(intent)
@@ -391,13 +396,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun setIcon() {
-        if (!mediaPlayerService.stateCheck(1)) {
-            playButton.setIconResource(R.drawable.ic_play_arrow_24px)
-        } else if (mediaPlayerService.checkComplete()) {
-            playButton.setIconResource(R.drawable.ic_play_arrow_24px)
-        } else {
-            playButton.setIconResource(R.drawable.ic_pause_circle_24px)
-        }
+        IconTools().setPlayIcon(playButton, mediaPlayerService.stateCheck(1))
     }
 
     private fun setImage() {
@@ -428,14 +427,6 @@ class PlayListActivity : AppCompatActivity() {
         } else {
             isInOrderQueue = true
             mediaPlayerService.setInOrderQueue(true)
-        }
-    }
-
-    private fun setMethodIcon(button: MaterialButton) {
-        when (playMethodVal) {
-            0 -> button.setIconResource(R.drawable.ic_play_once)
-            1 -> button.setIconResource(R.drawable.ic_play_continuously)
-            2 -> button.setIconResource(R.drawable.ic_play_randomly)
         }
     }
 
@@ -505,4 +496,26 @@ class PlayListActivity : AppCompatActivity() {
             mediaPlayerService.removeBookmark(id)
         }
     }
+
+    private fun sharedPreferencesSaveData() {
+        val sharedPreferences = getSharedPreferences("SettingsPrefs", MODE_PRIVATE)
+        val editor = sharedPreferences.edit().apply(
+            fun SharedPreferences.Editor.() {
+                putFloat("Speed", speedVal)
+                putBoolean("continuePlay", continuePlay)
+                putBoolean("isInOrderQueue", isInOrderQueue)
+                val bookmarkString = mediaPlayerService.getBookmark().toString()
+                putString("bookmarks", bookmarkString)
+            }
+        )
+        editor.apply()
+    }
+
+    private fun sharedPreferencesLoadData() {
+        val sharedPreferences = getSharedPreferences("SettingsPrefs", MODE_PRIVATE)
+        speedVal = sharedPreferences.getFloat("Speed", 1F)
+        continuePlay = sharedPreferences.getBoolean("continuePlay", false)
+        isInOrderQueue = sharedPreferences.getBoolean("isInOrderQueue", true)
+    }
+
 }

@@ -17,10 +17,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.bnds.audioplayer.databinding.ActivityPlayBinding
+import com.bnds.audioplayer.uiTools.IconTools
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
 import com.google.android.material.textview.MaterialTextView
-import java.util.Locale
 
 open class PlayActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlayBinding
@@ -83,10 +83,7 @@ open class PlayActivity : AppCompatActivity() {
             val transferData = intent.extras
             transferData?.keySet()?.forEach { key ->
                 when (key) {
-                    "Speed Values" -> speedVal = transferData.getFloat(key)
                     "musicPosition" -> musicPosition = transferData.getInt(key)
-                    "continuePlay" -> continuePlay = transferData.getBoolean(key)
-                    "isInOrderQueue" -> isInOrderQueue = transferData.getBoolean(key)
                     "newSong" -> new = transferData.getBoolean(key)
                 }
             }
@@ -109,10 +106,31 @@ open class PlayActivity : AppCompatActivity() {
         }
     }
 
+    private fun endActivity() {
+        val intent2 = Intent()
+        val transferData = Bundle()
+        transferData.putFloat("Speed Values", speedVal)
+        transferData.putInt("musicPosition", musicPosition)
+        transferData.putBoolean("continuePlay", continuePlay)
+        transferData.putBoolean("isInOrderQueue", isInOrderQueue)
+        intent2.putExtras(transferData)
+        if (!needRefresh) setResult(RESULT_OK, intent2)
+        else setResult(RESULT_FIRST_USER, intent2)
+        handler.removeCallbacksAndMessages(null)
+        unbindService()
+        finish()
+    }
+
     private fun handleMusicPlayback() {
         musicSize = musicPlayerService.getMusicSize()
         setUsability()
         musicPlayerService.setContext(this)
+
+        continuePlay = musicPlayerService.getContinues()
+        isInOrderQueue = musicPlayerService.getInOrderQueue()
+        speedVal = musicPlayerService.getPlaybackSpeed()
+
+        initialMethodVal(continuePlay, isInOrderQueue)
 
         if (openFromFile != null) {
             for (music in musicPlayerService.getMusicList()) {
@@ -163,46 +181,26 @@ open class PlayActivity : AppCompatActivity() {
             "$timeInMinutes:$timeInSeconds - $totalInMinutes:$totalInSeconds"
         }
 
-        setMethodIcon(playMethodIcon)
+        IconTools().setMethodImageIcon(playMethodIcon, playMethodVal)
         playMethodIcon.setOnClickListener {
-            when (playMethodVal) {
-                0 -> playMethodVal = 1
-                1 -> playMethodVal = 2
-                2 -> playMethodVal = 0
-            }
-            setMethodIcon(playMethodIcon)
+            setMethodVal()
+            IconTools().setMethodImageIcon(playMethodIcon, playMethodVal)
             setMethod(playMethodVal)
         }
 
         speedSlower.setOnClickListener {
-            speedVal -= 0.5F
-            if (speedVal < 0.5F) {
-                speedVal = 0.5F
-            }
-            setPlaySpeed(speedVal)
-            updateShowSpeed()
+            changeSpeed(true)
         }
         speedFaster.setOnClickListener {
-            speedVal += 0.5F
-            if (speedVal > 3F) {
-                speedVal = 3F
-            }
-            setPlaySpeed(speedVal)
-            updateShowSpeed()
+            changeSpeed(false)
         }
 
         nextButton.setOnClickListener {
             jumpAnotherSong(true)
-            UIAdapter(this).updateBar(
-                progressBar, musicPlayerService.getProgress(), musicPlayerService.getDuration()
-            )
         }
 
         previousButton.setOnClickListener {
             jumpAnotherSong(false)
-            UIAdapter(this).updateBar(
-                progressBar, musicPlayerService.getProgress(), musicPlayerService.getDuration()
-            )
         }
 
         backButton.setOnClickListener {
@@ -238,6 +236,22 @@ open class PlayActivity : AppCompatActivity() {
         }
     }
 
+    private fun changeSpeed(isSlower: Boolean) {
+        if (isSlower) {
+            speedVal -= 0.5F
+            if (speedVal < 0.5F) {
+                speedVal = 0.5F
+            }
+        } else {
+            speedVal += 0.5F
+            if (speedVal > 3F) {
+                speedVal = 3F
+            }
+        }
+        setPlaySpeed(speedVal)
+        updateShowSpeed()
+    }
+
     private fun setPlaySpeed(speed: Float) {
         if (musicPlayerService.stateCheck(1)) {
             musicPlayerService.setSpeed(speed)
@@ -245,19 +259,6 @@ open class PlayActivity : AppCompatActivity() {
             musicPlayerService.setSpeed(speed)
             musicPlayerService.pauseAndResume()
         }
-    }
-
-    fun checkBookmark(id: Long) : Boolean {
-        if (bookMarker.isEmpty()) {
-            return false
-        }
-        if (!bookMarker.containsKey(id)) {
-            return false
-        }
-        if (bookMarker[id] == 0.toLong()) {
-            return false
-        }
-        return true
     }
 
     private fun pauseOrContinue() {
@@ -282,21 +283,6 @@ open class PlayActivity : AppCompatActivity() {
         UIAdapter(this).updateUIGroup()
     }
 
-    private fun endActivity() {
-        val intent2 = Intent()
-        val transferData = Bundle()
-        transferData.putFloat("Speed Values", speedVal)
-        transferData.putInt("musicPosition", musicPosition)
-        transferData.putBoolean("continuePlay", continuePlay)
-        transferData.putBoolean("isInOrderQueue", isInOrderQueue)
-        intent2.putExtras(transferData)
-        if (!needRefresh) setResult(RESULT_OK, intent2)
-        else setResult(RESULT_FIRST_USER, intent2)
-        handler.removeCallbacksAndMessages(null)
-        unbindService()
-        finish()
-    }
-
     private fun checkPlayProgress() {
         bookMarker = musicPlayerService.getBookmark()
         if (musicPosition != musicPlayerService.getThisPosition()) {
@@ -304,13 +290,6 @@ open class PlayActivity : AppCompatActivity() {
             UIAdapter(this).updateUIGroup()
         } else UIAdapter(this).updateUIIconAndBar()
         handler.postDelayed({ checkPlayProgress() }, 100)
-    }
-
-    fun longToTime(time: Long): String {
-        val seconds = time / 1000
-        val minutes = seconds / 60
-        val remainingSeconds = seconds % 60
-        return String.format(Locale.getDefault(), "%02d:%02d", minutes, remainingSeconds)
     }
 
     private fun updateShowSpeed() {
@@ -356,8 +335,6 @@ open class PlayActivity : AppCompatActivity() {
 
         titleText.isSelected = true
 
-        setMethodVal(continuePlay, isInOrderQueue)
-
         bindService()                                                                               // bind service
 
         onBackPressedDispatcher.addCallback(this) {                                          // force to transfer the data back to PlayListActivity
@@ -395,15 +372,15 @@ open class PlayActivity : AppCompatActivity() {
         }
     }
 
-    private fun setMethodIcon(iconView: ImageView) {
+    private fun setMethodVal() {
         when (playMethodVal) {
-            0 -> iconView.setImageResource(R.drawable.ic_play_once)
-            1 -> iconView.setImageResource(R.drawable.ic_play_continuously)
-            2 -> iconView.setImageResource(R.drawable.ic_play_randomly)
+            0 -> playMethodVal = 1
+            1 -> playMethodVal = 2
+            2 -> playMethodVal = 0
         }
     }
 
-    private fun setMethodVal(continuePlay: Boolean, isInOrderQueue: Boolean) {
+    private fun initialMethodVal(continuePlay: Boolean, isInOrderQueue: Boolean) {
         playMethodVal = if (continuePlay) {
             if (isInOrderQueue) 1 else 2
         } else 0
