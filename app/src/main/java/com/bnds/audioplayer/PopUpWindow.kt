@@ -9,8 +9,7 @@ class PopUpWindow(private val playerService: PlayerService) {
         if (playerService.stateCheck(1)) playerService.pauseAndResume()
         builder?.setMessage(R.string.bookmark_nottification)
         builder?.setPositiveButton(R.string.bookmark_yes) { dialog, _ ->
-            playerService.play(musicPosition, speed)
-            playerService.seekTo(
+            playerService.play(musicPosition, speed,
                 playerService.getBookmark()[playerService.getPositionId(musicPosition)]!!)
             dialog.dismiss()
         }

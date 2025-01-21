@@ -1,7 +1,6 @@
 package com.bnds.audioplayer
 
 import android.content.res.Configuration
-import android.util.TypedValue
 import android.widget.ImageView
 import androidx.cardview.widget.CardView
 import com.bnds.audioplayer.uiTools.ColorTools
@@ -9,49 +8,22 @@ import com.bnds.audioplayer.uiTools.IconTools
 import com.google.android.material.slider.Slider
 
 class UIAdapter(private val activity: PlayActivity) {
-    private var colorSurface: Int = 0
-    private var colorPrimary: Int = 0
-    private var colorPrimaryContainer: Int = 0
-    private var colorSurfaceInverse: Int = 0
-    private var colorOnPrimary: Int = 0
-    private var colorOnSurface: Int = 0
-    private var colorOnSurfaceInverse: Int = 0
 
-    private fun initColors(activity: PlayActivity) {
-        val typedValue = TypedValue()
-        val theme = activity.theme
-        theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true)
-        colorSurface = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
-        colorPrimary = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorPrimaryContainer, typedValue, true)
-        colorPrimaryContainer = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceInverse, typedValue, true)
-        colorSurfaceInverse = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorOnPrimary, typedValue, true)
-        colorOnPrimary = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
-        colorOnSurface = typedValue.data
-        theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceInverse, typedValue, true)
-        colorOnSurfaceInverse = typedValue.data
-    }
-
-    fun updateUIGroup () {
-        initColors(activity)
+    fun refreshPage () {
         setColor()
         updateTitle()
         updateArt()
         setIcon()
-        updateBar(
+        updateBarProgress(
             activity.progressBar,
             activity.musicPlayerService.getProgress(),
             activity.musicPlayerService.getDuration()
         )
     }
 
-    fun updateUIIconAndBar () {
+    fun refreshIconAndBar () {
         setIcon()
-        updateBar(
+        updateBarProgress(
             activity.progressBar,
             activity.musicPlayerService.getProgress(),
             activity.musicPlayerService.getDuration()
@@ -82,31 +54,18 @@ class UIAdapter(private val activity: PlayActivity) {
             activity.playMethodIcon,
             activity
         )
-        ColorTools().setBarColor(activity.progressBar, albumDominantColor)
-        if (isDarkMode) {
-            ColorTools().updateTextsColor(
-                albumDominantColor,
-                colorOnSurfaceInverse,
-                colorOnSurface,
-                activity.speedSlower,
-                activity.speedFaster,
-                activity.showSpeed,
-                activity
-            )
-        } else {
-            ColorTools().updateTextsColor(
-                albumDominantColor,
-                colorOnSurface,
-                colorOnSurfaceInverse,
-                activity.speedSlower,
-                activity.speedFaster,
-                activity.showSpeed,
-                activity
-            )
-        }
+        ColorTools().setBarColor(activity.progressBar, albumDominantColor, activity)
+        ColorTools().updateTextsColor(
+            albumDominantColor,
+            isDarkMode,
+            activity.speedSlower,
+            activity.speedFaster,
+            activity.showSpeed,
+            activity
+        )
     }
 
-    fun updateBar(progressBar: Slider, progress: Long, duration: Long) {
+    fun updateBarProgress(progressBar: Slider, progress: Long, duration: Long) {
         if (activity.pauseUpdate) return
         if (progress <= duration && !activity.musicPlayerService.stateCheck(0)
             && duration != 0.toLong()) {

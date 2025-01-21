@@ -188,9 +188,7 @@ class PlayListActivity : AppCompatActivity() {
             mediaPlayerService.getMusicList(), mediaPlayerService.getBookmark()) { music ->
             setTransferData(
                 transferData,
-                speedVal,
-                continuePlay,
-                isInOrderQueue,
+                null, null, null,
                 mediaPlayerService.getMusicPosition(music),
                 true
             )
@@ -338,9 +336,7 @@ class PlayListActivity : AppCompatActivity() {
                 val transferData = Bundle()
                 setTransferData(
                     transferData,
-                    speedVal,
-                    continuePlay,
-                    isInOrderQueue,
+                    null, null, null,
                     position,
                     false
                 )
@@ -453,13 +449,13 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun setTransferData(
         transferBundle: Bundle,
-        speed: Float,
+        speed: Float?,
         continues: Boolean?,
         isInOrderQueue: Boolean?,
         position: Int?,
         newSong: Boolean?
     ) {
-        transferBundle.putFloat("Speed Values", speed)
+        if (speed != null) transferBundle.putFloat("Speed Values", speed)
         if (continues != null) transferBundle.putBoolean("continuePlay", continues)
         if (isInOrderQueue != null) transferBundle.putBoolean("isInOrderQueue", isInOrderQueue)
         if (position != null) transferBundle.putInt("musicPosition", position)

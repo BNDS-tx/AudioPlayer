@@ -106,7 +106,9 @@ class PlayerService : Service() {
                     super.onPlay()
                     if (musicListPosition != -1) {
                         if (stateCheck(3)) {
-                            play(musicListPosition, playbackSpeed)
+                            if (checkBookmark(musicList[musicListPosition].id))
+                                PopUpWindow(this@PlayerService).popupMarker(musicListPosition, playbackSpeed)
+                            else play(musicListPosition, playbackSpeed, 0)
                             updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                         } else {
                             pauseAndResume()
@@ -115,7 +117,10 @@ class PlayerService : Service() {
                             } else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                         }
                     } else {
-                        play(0, playbackSpeed)
+                        if (musicList.isEmpty()) PopUpWindow(this@PlayerService).popUpAlert(0)
+                        else if (checkBookmark(musicList[0].id))
+                            PopUpWindow(this@PlayerService).popupMarker(0, playbackSpeed)
+                        else play(0, playbackSpeed, 0)
                         updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                     }
                     updateNotification()
@@ -286,8 +291,10 @@ class PlayerService : Service() {
         intent?.action?.let {
             when (it) {
                 "TOGGLE_PLAY_PAUSE" -> {
-                    if (mediaPlayer?.isPlaying == false) {
-                        play(musicListPosition, playbackSpeed)
+                    if (stateCheck(3) || stateCheck(4)) {
+                        if (checkBookmark(musicList[musicListPosition].id))
+                            PopUpWindow(this).popupMarker(musicListPosition, playbackSpeed)
+                        else play(musicListPosition, playbackSpeed, 0)
                     } else {
                         pauseAndResume()
                     }
@@ -357,12 +364,12 @@ class PlayerService : Service() {
         else musicList[if (musicListPosition == -1) 0 else musicListPosition].artist
 
     fun getThisAlbumArt(): Bitmap? =
-        if (musicList.isEmpty()) null
+        if (musicList.isEmpty() || musicListPosition == -1) null
         else
-            if (musicList[if (musicListPosition == -1) 0 else musicListPosition].albumArt != null)
-                musicList[if (musicListPosition == -1) 0 else musicListPosition].albumArt
+            if (musicList[musicListPosition].albumArt != null)
+                musicList[musicListPosition].albumArt
             else getAlbumArtFromUri(
-                musicList[if (musicListPosition == -1) 0 else musicListPosition].uri
+                musicList[musicListPosition].uri
             )
 
     private fun getAlbumArtFromUri(uri: Uri): Bitmap? {
@@ -391,11 +398,9 @@ class PlayerService : Service() {
     fun startPlaying(new: Boolean, position: Int, speed: Float) {
         playbackSpeed = speed
         if (new) {
-            if (!checkBookmark(musicList[position].id)) {
-                play(position, speed)
-            } else {
+            if (checkBookmark(musicList[position].id))
                 PopUpWindow(this).popupMarker(position, speed)
-            }
+            else play(position, speed, 0)
         } else if (musicListPosition == -1) {
             if (musicList.isEmpty()) {
                 PopUpWindow(this).popUpAlert(musicList.size)
@@ -403,17 +408,15 @@ class PlayerService : Service() {
         }
     }
 
-    fun play(position: Int, speed: Float, start: Int? = null) {
+    fun play(position: Int, speed: Float, start: Long) {
         if (!stateCheck(4) || !stateCheck(3)) { mediaPlayer?.stop() }
         musicListPosition = if (position == -1) 0
         else position
         val uri = musicList[musicListPosition].uri
-        val bookMark = bookMarker[musicList[musicListPosition].id]
         playbackSpeed = speed
         try {
             mediaPlayer?.apply {
-                if (start != null) setMediaItem(MediaItem.fromUri(uri), start.toLong())
-                else setMediaItem(MediaItem.fromUri(uri), bookMark?.toLong() ?: 0)
+                setMediaItem(MediaItem.fromUri(uri), start)
                 prepare()
                 setPlaybackSpeed(playbackSpeed)
                 play()
@@ -436,11 +439,10 @@ class PlayerService : Service() {
             }
             musicListPosition = playQueue[Random.nextInt(playQueue.size)]
         }
-        if (!checkBookmark(musicList[musicListPosition].id)) {
-            play(musicListPosition, playbackSpeed)
-        } else {
+        if (checkBookmark(musicList[musicListPosition].id))
             PopUpWindow(this).popupMarker(musicListPosition, playbackSpeed)
-        }
+        else play(musicListPosition, playbackSpeed, 0)
+
         setPlaybackState()
         updateNotification()
     }
@@ -449,11 +451,10 @@ class PlayerService : Service() {
         if (isInOrderQueue) {
             musicListPosition = (musicListPosition - 1 + musicList.size) % musicList.size
         }
-        if (!checkBookmark(musicList[musicListPosition].id)) {
-            play(musicListPosition, playbackSpeed)
-        } else {
+        if (checkBookmark(musicList[musicListPosition].id))
             PopUpWindow(this).popupMarker(musicListPosition, playbackSpeed)
-        }
+        else play(musicListPosition, playbackSpeed, 0)
+
         setPlaybackState()
         updateNotification()
     }
@@ -462,7 +463,10 @@ class PlayerService : Service() {
         mediaPlayer?.let {
             if (stateCheck(1)) { it.pause() }
             else if (stateCheck(2)) { it.play() }
-            else { play(musicListPosition, playbackSpeed) }
+            else {
+                if (checkBookmark(musicList[if (musicListPosition == -1) 0 else musicListPosition].id))
+                    PopUpWindow(this).popupMarker(musicListPosition, playbackSpeed)
+                else play(musicListPosition, playbackSpeed, 0) }
         }
         setPlaybackState()
         updateNotification()
@@ -484,11 +488,12 @@ class PlayerService : Service() {
 
     fun setSpeed(speed: Float) {
         mediaPlayer?.setPlaybackSpeed(speed)
+        playbackSpeed = speed
         setPlaybackState()
         updateNotification()
     }
 
-    fun setBookmark() {
+    fun setCurrentBookmark() {
         if (!checkBookmark(musicList[musicListPosition].id)) {
             bookMarker[musicList[musicListPosition].id] = mediaPlayer?.currentPosition as Long
             musicList[musicListPosition].bookMarker = mediaPlayer?.currentPosition
@@ -522,11 +527,11 @@ class PlayerService : Service() {
 
     private fun updateInformation() {
         setPlaybackState()
-        if (checkComplete() && musicListPosition != -1 ) {
+        if (stateCheck(4) && musicListPosition != -1 ) {
             if (!isContinue) { mediaPlayer?.stop() }
             else { playNext() }
         }
-        handler.postDelayed({ updateInformation() }, 1000 / playbackSpeed.toLong())
+        handler.postDelayed({ updateInformation() }, 1000)
 
     }
 
@@ -557,10 +562,6 @@ class PlayerService : Service() {
         return !(bookMarker.isEmpty() ||
                 !bookMarker.containsKey(id) ||
                 bookMarker[id]!! <= 0L)
-    }
-
-    fun checkComplete(): Boolean {
-        return mediaPlayer?.playbackState == Player.STATE_ENDED
     }
 
     private fun sharedPreferencesLoadData() {

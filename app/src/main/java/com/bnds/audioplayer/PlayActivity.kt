@@ -106,6 +106,28 @@ open class PlayActivity : AppCompatActivity() {
         }
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        unbindService()
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            setContentView(R.layout.activity_play)
+        } else {
+            setContentView(R.layout.activity_play)
+        }
+        initializeViews()
+        bindService()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        bindService()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        endActivity()
+    }
+
     private fun endActivity() {
         val intent2 = Intent()
         val transferData = Bundle()
@@ -119,200 +141,6 @@ open class PlayActivity : AppCompatActivity() {
         handler.removeCallbacksAndMessages(null)
         unbindService()
         finish()
-    }
-
-    private fun handleMusicPlayback() {
-        musicSize = musicPlayerService.getMusicSize()
-        setUsability()
-        musicPlayerService.setContext(this)
-
-        continuePlay = musicPlayerService.getContinues()
-        isInOrderQueue = musicPlayerService.getInOrderQueue()
-        speedVal = musicPlayerService.getPlaybackSpeed()
-
-        initialMethodVal(continuePlay, isInOrderQueue)
-
-        if (openFromFile != null) {
-            for (music in musicPlayerService.getMusicList()) {
-                if (getRealPathFromURI(music.uri) == getRealPathFromURI(openFromFile!!)) {
-                    val position = musicPlayerService.getMusicPosition(music)
-                    musicPlayerService.startPlaying(true, position, speedVal)
-                    openFromFile = null
-                    break
-                }
-            }
-        } else musicPlayerService.startPlaying(new, musicPosition, speedVal); new = false
-
-        musicPosition = musicPlayerService.getThisPosition()
-
-        playButton.setOnClickListener {
-            pauseOrContinue()
-        }
-
-        bookMarkButton.setOnClickListener {
-            if (musicPosition != -1) {
-                musicPlayerService.setBookmark()
-                bookMarker = musicPlayerService.getBookmark()
-            }
-            UIAdapter(this).setIcon()
-            needRefresh = !needRefresh
-        }
-
-        UIAdapter(this).updateBar(
-            progressBar, musicPlayerService.getProgress(), musicPlayerService.getDuration()
-        )
-        progressBar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
-            override fun onStartTrackingTouch(slider: Slider) {
-                pauseUpdate = true
-            }
-            override fun onStopTrackingTouch(slider: Slider) {
-                pauseUpdate = false
-                val newProgress = slider.value.toLong()
-                musicPlayerService.seekTo(newProgress)
-            }
-        })
-        progressBar.setLabelFormatter { value ->
-            val valueInMillis = value.toLong()
-            val timeInMinutes = valueInMillis / 60000
-            val timeInSeconds = (valueInMillis % 60000) / 1000
-            val valueToInMillis = progressBar.valueTo.toLong()
-            val totalInMinutes = valueToInMillis / 60000
-            val totalInSeconds = (valueToInMillis % 60000) / 1000
-            "$timeInMinutes:$timeInSeconds - $totalInMinutes:$totalInSeconds"
-        }
-
-        IconTools().setMethodImageIcon(playMethodIcon, playMethodVal)
-        playMethodIcon.setOnClickListener {
-            setMethodVal()
-            IconTools().setMethodImageIcon(playMethodIcon, playMethodVal)
-            setMethod(playMethodVal)
-        }
-
-        speedSlower.setOnClickListener {
-            changeSpeed(true)
-        }
-        speedFaster.setOnClickListener {
-            changeSpeed(false)
-        }
-
-        nextButton.setOnClickListener {
-            jumpAnotherSong(true)
-        }
-
-        previousButton.setOnClickListener {
-            jumpAnotherSong(false)
-        }
-
-        backButton.setOnClickListener {
-            endActivity()
-        }
-
-        titleText.setOnClickListener {
-            endActivity()
-        }
-
-        checkPlayProgress()
-        updateShowSpeed()
-        UIAdapter(this).updateUIGroup()
-    }
-
-    private fun setUsability() {
-        if (musicSize == 0) {
-            playButton.isEnabled = false
-            bookMarkButton.isEnabled = false
-            speedSlower.isEnabled = false
-            speedFaster.isEnabled = false
-            progressBar.isEnabled = false
-            nextButton.isEnabled = false
-            previousButton.isEnabled = false
-        } else {
-            playButton.isEnabled = true
-            bookMarkButton.isEnabled = true
-            speedSlower.isEnabled = true
-            speedFaster.isEnabled = true
-            progressBar.isEnabled = true
-            nextButton.isEnabled = true
-            previousButton.isEnabled = true
-        }
-    }
-
-    private fun changeSpeed(isSlower: Boolean) {
-        if (isSlower) {
-            speedVal -= 0.5F
-            if (speedVal < 0.5F) {
-                speedVal = 0.5F
-            }
-        } else {
-            speedVal += 0.5F
-            if (speedVal > 3F) {
-                speedVal = 3F
-            }
-        }
-        setPlaySpeed(speedVal)
-        updateShowSpeed()
-    }
-
-    private fun setPlaySpeed(speed: Float) {
-        if (musicPlayerService.stateCheck(1)) {
-            musicPlayerService.setSpeed(speed)
-        } else if (musicPlayerService.stateCheck(2)) {
-            musicPlayerService.setSpeed(speed)
-            musicPlayerService.pauseAndResume()
-        }
-    }
-
-    private fun pauseOrContinue() {
-        UIAdapter(this).setIcon()
-        if (musicPosition != musicPlayerService.getThisPosition()) {
-            musicPosition = musicPlayerService.getThisPosition()
-            musicPlayerService.pauseAndResume()
-            UIAdapter(this).updateUIGroup()
-        } else {
-            musicPlayerService.pauseAndResume()
-            UIAdapter(this).updateUIIconAndBar()
-        }
-    }
-
-    private fun jumpAnotherSong(next: Boolean) {
-        if (next) {
-            musicPlayerService.playNext()
-        } else {
-            musicPlayerService.playPrevious()
-        }
-        musicPosition = musicPlayerService.getThisPosition()
-        UIAdapter(this).updateUIGroup()
-    }
-
-    private fun checkPlayProgress() {
-        bookMarker = musicPlayerService.getBookmark()
-        if (musicPosition != musicPlayerService.getThisPosition()) {
-            musicPosition = musicPlayerService.getThisPosition()
-            UIAdapter(this).updateUIGroup()
-        } else UIAdapter(this).updateUIIconAndBar()
-        handler.postDelayed({ checkPlayProgress() }, 100)
-    }
-
-    private fun updateShowSpeed() {
-        when (speedVal) {
-            0.5F -> showSpeed.setText(R.string.speed_0_5)
-            1F -> showSpeed.setText(R.string.speed_1)
-            1.5F -> showSpeed.setText(R.string.speed_1_5)
-            2F -> showSpeed.setText(R.string.speed_2)
-            2.5F -> showSpeed.setText(R.string.speed_2_5)
-            3F -> showSpeed.setText(R.string.speed_3)
-        }
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        unbindService()
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            setContentView(R.layout.activity_play)
-        } else {
-            setContentView(R.layout.activity_play)
-        }
-        initializeViews()
-        bindService()
     }
 
     private fun initializeViews() {
@@ -342,6 +170,101 @@ open class PlayActivity : AppCompatActivity() {
         }
     }
 
+    private fun handleMusicPlayback() {
+        musicSize = musicPlayerService.getMusicSize()
+        musicPlayerService.setContext(this)
+
+        initializeData()
+        checkUsability()
+
+        if (openFromFile != null) {
+            for (music in musicPlayerService.getMusicList()) {
+                if (getRealPathFromURI(music.uri) == getRealPathFromURI(openFromFile!!)) {
+                    val position = musicPlayerService.getMusicPosition(music)
+                    musicPlayerService.startPlaying(true, position, speedVal)
+                    openFromFile = null
+                    break
+                }
+            }
+        } else musicPlayerService.startPlaying(new, musicPosition, speedVal); new = false
+
+        musicPosition = musicPlayerService.getThisPosition()
+
+        playButton.setOnClickListener {
+            pauseOrContinue()
+        }
+
+        bookMarkButton.setOnClickListener {
+            setCurrentBookmark()
+        }
+
+        UIAdapter(this).updateBarProgress(
+            progressBar, musicPlayerService.getProgress(), musicPlayerService.getDuration()
+        )
+        setProgressBar()
+
+        IconTools().setMethodImageIcon(playMethodIcon, playMethodVal)
+        playMethodIcon.setOnClickListener {
+            updateMethodVal()
+        }
+
+        speedSlower.setOnClickListener {
+            changeSpeed(true)
+        }
+        speedFaster.setOnClickListener {
+            changeSpeed(false)
+        }
+
+        nextButton.setOnClickListener {
+            jumpAnotherSong(true)
+        }
+
+        previousButton.setOnClickListener {
+            jumpAnotherSong(false)
+        }
+
+        backButton.setOnClickListener {
+            endActivity()
+        }
+
+        titleText.setOnClickListener {
+            endActivity()
+        }
+
+        checkPlayProgress()
+        updateShowSpeed()
+        UIAdapter(this).refreshPage()
+    }
+
+    private fun initializeData() {
+        continuePlay = musicPlayerService.getContinues()
+        isInOrderQueue = musicPlayerService.getInOrderQueue()
+        speedVal = musicPlayerService.getPlaybackSpeed()
+        playMethodVal = if (continuePlay) {
+            if (isInOrderQueue) 1 else 2
+        } else 0
+    }
+
+    private fun checkUsability() {
+        if (musicSize == 0) {
+            playButton.isEnabled = false
+            bookMarkButton.isEnabled = false
+            speedSlower.isEnabled = false
+            speedFaster.isEnabled = false
+            progressBar.isEnabled = false
+            nextButton.isEnabled = false
+            previousButton.isEnabled = false
+        } else {
+            playButton.isEnabled = true
+            bookMarkButton.isEnabled = true
+            speedSlower.isEnabled = true
+            speedFaster.isEnabled = true
+            progressBar.isEnabled = true
+            nextButton.isEnabled = true
+            previousButton.isEnabled = true
+        }
+    }
+
     private fun getRealPathFromURI(uri: Uri): String? {
         val projection = arrayOf(MediaStore.Audio.Media.DATA)
         val cursor = contentResolver.query(uri, projection, null, null, null)
@@ -353,6 +276,59 @@ open class PlayActivity : AppCompatActivity() {
             return filePath
         }
         return null
+    }
+
+    private fun pauseOrContinue() {
+        UIAdapter(this).setIcon()
+        if (musicPosition != musicPlayerService.getThisPosition()) {
+            musicPosition = musicPlayerService.getThisPosition()
+            musicPlayerService.pauseAndResume()
+            UIAdapter(this).refreshPage()
+        } else {
+            musicPlayerService.pauseAndResume()
+            UIAdapter(this).refreshIconAndBar()
+        }
+    }
+
+    private fun setCurrentBookmark() {
+        if (musicPosition != -1) {
+            musicPlayerService.setCurrentBookmark()
+            bookMarker = musicPlayerService.getBookmark()
+        }
+        UIAdapter(this).setIcon()
+        needRefresh = !needRefresh
+    }
+
+    private fun setProgressBar() {
+        progressBar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: Slider) {
+                pauseUpdate = true
+            }
+            override fun onStopTrackingTouch(slider: Slider) {
+                pauseUpdate = false
+                val newProgress = slider.value.toLong()
+                musicPlayerService.seekTo(newProgress)
+            }
+        })
+        progressBar.setLabelFormatter { value ->
+            val valueInMillis = value.toLong()
+            val timeInMinutes = valueInMillis / 60000
+            val timeInSeconds = (valueInMillis % 60000) / 1000
+            val valueToInMillis = progressBar.valueTo.toLong()
+            val totalInMinutes = valueToInMillis / 60000
+            val totalInSeconds = (valueToInMillis % 60000) / 1000
+            "$timeInMinutes:$timeInSeconds - $totalInMinutes:$totalInSeconds"
+        }
+    }
+
+    private fun updateMethodVal() {
+        when (playMethodVal) {
+            0 -> playMethodVal = 1
+            1 -> playMethodVal = 2
+            2 -> playMethodVal = 0
+        }
+        setMethod(playMethodVal)
+        IconTools().setMethodImageIcon(playMethodIcon, playMethodVal)
     }
 
     private fun setMethod(method: Int) {
@@ -372,27 +348,49 @@ open class PlayActivity : AppCompatActivity() {
         }
     }
 
-    private fun setMethodVal() {
-        when (playMethodVal) {
-            0 -> playMethodVal = 1
-            1 -> playMethodVal = 2
-            2 -> playMethodVal = 0
+    private fun changeSpeed(isSlower: Boolean) {
+        if (isSlower) {
+            speedVal -= 0.5F
+            if (speedVal < 0.5F) {
+                speedVal = 0.5F
+            }
+        } else {
+            speedVal += 0.5F
+            if (speedVal > 3F) {
+                speedVal = 3F
+            }
+        }
+        musicPlayerService.setSpeed(speedVal)
+        updateShowSpeed()
+    }
+
+    private fun updateShowSpeed() {
+        when (speedVal) {
+            0.5F -> showSpeed.setText(R.string.speed_0_5)
+            1F -> showSpeed.setText(R.string.speed_1)
+            1.5F -> showSpeed.setText(R.string.speed_1_5)
+            2F -> showSpeed.setText(R.string.speed_2)
+            2.5F -> showSpeed.setText(R.string.speed_2_5)
+            3F -> showSpeed.setText(R.string.speed_3)
         }
     }
 
-    private fun initialMethodVal(continuePlay: Boolean, isInOrderQueue: Boolean) {
-        playMethodVal = if (continuePlay) {
-            if (isInOrderQueue) 1 else 2
-        } else 0
+    private fun jumpAnotherSong(next: Boolean) {
+        if (next) {
+            musicPlayerService.playNext()
+        } else {
+            musicPlayerService.playPrevious()
+        }
+        musicPosition = musicPlayerService.getThisPosition()
+        UIAdapter(this).refreshPage()
     }
 
-    override fun onResume() {
-        super.onResume()
-        bindService()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        endActivity()
+    private fun checkPlayProgress() {
+        bookMarker = musicPlayerService.getBookmark()
+        if (musicPosition != musicPlayerService.getThisPosition()) {
+            musicPosition = musicPlayerService.getThisPosition()
+            UIAdapter(this).refreshPage()
+        } else UIAdapter(this).refreshIconAndBar()
+        handler.postDelayed({ checkPlayProgress() }, 100)
     }
 }

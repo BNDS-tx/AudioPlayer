@@ -68,7 +68,7 @@ class ColorTools {
         setBackgroundColor(color, background)
         setCardColor(colorPrimary, albumCard)
         setImageViewColor(colorPrimaryContainer, cardIcon)
-        if (color == colorPrimaryContainer) {
+        if (setColor == 0) {
             setCardColor(colorPrimary, titleBackground)
             setImageViewColor(colorPrimaryContainer, backButton)
             setTextColor(colorPrimaryContainer, titleText)
@@ -100,33 +100,41 @@ class ColorTools {
         image.imageTintList = ColorStateList.valueOf(color)
     }
 
-    fun setButtonColor(color: Int, button: MaterialButton) {
+    private fun setButtonColor(color: Int, button: MaterialButton) {
         button.backgroundTintList = ColorStateList.valueOf(color)
     }
 
-    fun setButtonTextColor(color: Int, button: MaterialButton) {
+    private fun setButtonTextColor(color: Int, button: MaterialButton) {
         button.setTextColor(color)
     }
 
-    fun setButtonIconColor(color: Int, button: MaterialButton) {
+    private fun setButtonIconColor(color: Int, button: MaterialButton) {
         button.iconTint = ColorStateList.valueOf(color)
     }
 
-    fun setBarColor(sysBar: Slider ,themeColor: Int) {
-        val vibrantColor = lightenColor(themeColor)
-        val mutedColor = darkenColor(themeColor)
+    fun setBarColor(sysBar: Slider ,setColor: Int, activity: Activity) {
+        initColors(activity)
+        val vibrantColor = if (setColor == 0) colorPrimary
+            else lightenColor(setColor)
+        val mutedColor = if (setColor == 0) colorSurface
+            else darkenColor(setColor)
         sysBar.trackActiveTintList = ColorStateList.valueOf(vibrantColor)
         sysBar.trackInactiveTintList = ColorStateList.valueOf(mutedColor)
         sysBar.thumbTintList = ColorStateList.valueOf(vibrantColor)
     }
 
     fun updateTextsColor(
-        setColor: Int, darkColor: Int, lightColor: Int,
+        setColor: Int, isDarkMode: Boolean,
         speedSlower: TextView, speedFaster: TextView, showSpeed: TextView,
         activity: Activity
     ) {
         initColors(activity)
         val color = if (setColor == 0) colorPrimaryContainer else setColor
+        val darkColor = if (isDarkMode) colorOnSurfaceInverse
+            else if (setColor == 0) colorPrimary
+            else colorOnSurface
+        val lightColor = if (isDarkMode) colorOnSurface
+            else colorOnSurfaceInverse
         val type = checkIsLightColor(color)
         if (type == 1) {
             setTextColor(darkColor, showSpeed)
