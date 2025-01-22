@@ -502,8 +502,10 @@ class PlayListActivity : AppCompatActivity() {
                 putFloat("Speed", speedVal)
                 putBoolean("continuePlay", continuePlay)
                 putBoolean("isInOrderQueue", isInOrderQueue)
-                val bookmarkString = mediaPlayerService.getBookmark().toString()
-                putString("bookmarks", bookmarkString)
+                if (hasPermissions() || isBound) {
+                    val bookmarkString = mediaPlayerService.getBookmark().toString()
+                    putString("bookmarks", bookmarkString)
+                }
             }
         )
         editor.apply()
