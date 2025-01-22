@@ -66,7 +66,7 @@ class UIAdapter(private val activity: PlayActivity) {
 
     fun updateBarProgress(progressBar: Slider, progress: Long, duration: Long) {
         if (activity.pauseUpdate) return
-        if (progress <= duration && !activity.musicPlayerService.stateCheck(0)
+        if (progress <= duration && !activity.musicPlayerService.checkState(0)
             && duration != 0.toLong()) {
             progressBar.value = progress.toFloat()
             progressBar.valueTo = duration.toFloat()
@@ -88,7 +88,7 @@ class UIAdapter(private val activity: PlayActivity) {
     }
 
     fun setIcon() {
-        IconTools.setPlayIcon(activity.playButton, activity.musicPlayerService.stateCheck(1))
+        IconTools.setPlayIcon(activity.playButton, activity.musicPlayerService.checkState(1))
         if (activity.musicPosition >= 0) {
             IconTools.setBookmarkIcon(activity.bookMarkButton,
                 activity.bookMarker[

@@ -22,7 +22,8 @@
                 android:id="@+id/playListRecyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:paddingBottom="100dp"
+                android:paddingTop="140dp"
+                android:paddingBottom="200dp"
                 android:clipToPadding="false"/>
         </LinearLayout>
 

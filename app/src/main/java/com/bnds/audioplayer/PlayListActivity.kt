@@ -14,6 +14,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Parcelable
 import android.util.TypedValue
+import android.view.ViewTreeObserver
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -23,7 +24,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
@@ -48,7 +48,6 @@ class PlayListActivity : AppCompatActivity() {
     private var isNewOpen = false
     private var isDirectionChanged = false
 
-    private lateinit var listDiffResult: MusicDiffCallback
     private lateinit var scroller : CenterSmoothScroller
     private lateinit var mediaPlayerService: PlayerService
     private var isBound = false
@@ -211,7 +210,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun checkPlayProgress() {
-        if ((musicPosition != -1 || mediaPlayerService.stateCheck(1)) &&
+        if ((musicPosition != -1 || mediaPlayerService.checkState(1)) &&
             musicPosition != mediaPlayerService.getThisPosition()) {
             musicPosition = mediaPlayerService.getThisPosition()
             musicTitle.text = mediaPlayerService.getPositionTitle(musicPosition)
@@ -328,6 +327,7 @@ class PlayListActivity : AppCompatActivity() {
         mediaPlayerService.setMusicList(
             Scanner.scanMusicFiles(this, mediaPlayerService.getMusicList()))
         musicSize = mediaPlayerService.getMusicSize()
+        mediaPlayerService.checkAvailability()
         mediaPlayerService.updateNotification()
     }
 
@@ -397,12 +397,12 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun setIcon() {
-        IconTools.setPlayIcon(playButton, mediaPlayerService.stateCheck(1))
+        IconTools.setPlayIcon(playButton, mediaPlayerService.checkState(1))
     }
 
     private fun setImage() {
-        if (musicPosition == -1) return
-        val bitmap = mediaPlayerService.getThisAlbumArt()
+        val bitmap = if (musicPosition == -1) null
+            else mediaPlayerService.getThisAlbumArt()
         playButtonImage.setImageBitmap(bitmap)
         val typedValue = TypedValue()
         theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
@@ -441,7 +441,7 @@ class PlayListActivity : AppCompatActivity() {
         if (musicPosition != -1 && mediaPlayerService.getProgress() > 0) {
             musicTitle.text = mediaPlayerService.getPositionTitle(musicPosition)
             titleText.text = mediaPlayerService.getPositionTitle(musicPosition)
-        } else if (mediaPlayerService.stateCheck(1)) {
+        } else if (mediaPlayerService.checkState(1)) {
             musicPosition = mediaPlayerService.getThisPosition()
             musicTitle.text = mediaPlayerService.getPositionTitle(musicPosition)
             titleText.text = mediaPlayerService.getPositionTitle(musicPosition)
@@ -473,14 +473,10 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun updateMusicList() {
-        if (isNewOpen) recyclerView.adapter = musicAdapter
-        val oldMusicList = musicAdapter.getList()
+        if (recyclerView.adapter == null) recyclerView.adapter = musicAdapter
         loadData()
         val newMusicList = mediaPlayerService.getMusicList()
-        listDiffResult = MusicDiffCallback(oldMusicList, newMusicList)
-        val diffResult = DiffUtil.calculateDiff(listDiffResult)
         musicAdapter.setList(newMusicList)
-        diffResult.dispatchUpdatesTo(musicAdapter)
     }
 
     private fun updateMusicMarker() {

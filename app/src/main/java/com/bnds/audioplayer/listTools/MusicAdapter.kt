@@ -5,22 +5,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.fileTools.*
 import com.bnds.audioplayer.*
-import java.util.Locale
+import com.bnds.audioplayer.uiTools.*
 
 class MusicAdapter(
     private var musicList: List<Music>,
     private val onItemClick: (Music) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
-    private val TYPE_HEADER = 0
-    private val TYPE_ITEM = 1
-
-    override fun getItemViewType(position: Int): Int {
-        return if (position == 0 || position == musicList.size + 1) TYPE_HEADER else TYPE_ITEM
-    }
 
     inner class MusicViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {               // define the view holder
         val title: TextView = itemView.findViewById(R.id.musicTitle)
@@ -32,78 +26,57 @@ class MusicAdapter(
             itemView.setOnClickListener {
                 val position = bindingAdapterPosition                                               // use bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {                                         // make sure the position is valid
-                    onItemClick(musicList[position - 1])                                            // call the onItemClick function
+                    onItemClick(musicList[position])                                            // call the onItemClick function
                 }
             }
         }
     }
 
-    inner class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {            // create the view holder
-        if (viewType == TYPE_HEADER) {
-            val view = LayoutInflater.from(parent.context).inflate(
-                R.layout.item_header, parent, false
-            )
-            return HeaderViewHolder(view)
-        } else {
-            val view = LayoutInflater.from(parent.context).inflate(
-                R.layout.item_music, parent, false
-            )
-            return MusicViewHolder(view)
-        }
+        val view = LayoutInflater.from(parent.context).inflate(
+            R.layout.item_music, parent, false
+        )
+        return MusicViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (getItemViewType(position) == TYPE_ITEM) {
-            holder as MusicViewHolder
-            val music = musicList[position - 1]
-            holder.title.text = music.title
-            holder.artist.text = music.artist
-            if (music.bookMarker != null && music.bookMarker!! > 0L) {
-                holder.bookmark.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    0, 0, R.drawable.ic_bookmark_added_24px, 0
-                )
-                holder.bookmark.text = longToTime(music.bookMarker!!)
-            } else {
-                holder.bookmark.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    0, 0, 0, 0
-                )
-                holder.bookmark.text = ""
-            }
-
-            if (music.albumArt == null) {
-                FileHelper.getFilePathFromUri(
-                    holder.itemView.context,
-                    music.uri
-                ) { filePath ->             // get file path asynchronously
-                    if (filePath != null) {
-                        FileHelper.getAlbumArt(filePath) { bitmap ->                                        // update the album art after getting it asynchronously
-                            holder.albumArt.post {                                                          // update the UI on the main thread
-                                holder.albumArt.setImageBitmap(bitmap)
-                                music.albumArt = bitmap
-                            }
+        holder as MusicViewHolder
+        val music = musicList[position]
+        holder.title.text = music.title
+        holder.artist.text = music.artist
+        if (music.bookMarker != null && music.bookMarker!! > 0L) {
+            holder.bookmark.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                0, 0, R.drawable.ic_bookmark_added_24px, 0
+            )
+            holder.bookmark.text = IconTools.longToTime(music.bookMarker!!)
+        } else {
+            holder.bookmark.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                0, 0, 0, 0
+            )
+            holder.bookmark.text = ""
+        }
+        if (music.albumArt == null) {
+            FileHelper.getFilePathFromUri(
+                holder.itemView.context,
+                music.uri
+            ) { filePath ->             // get file path asynchronously
+                if (filePath != null) {
+                    FileHelper.getAlbumArt(filePath) { bitmap ->                                        // update the album art after getting it asynchronously
+                        holder.albumArt.post {                                                          // update the UI on the main thread
+                            holder.albumArt.setImageBitmap(bitmap)
+                            music.albumArt = bitmap
                         }
                     }
                 }
-            } else holder.albumArt.setImageBitmap(music.albumArt)
-        }
+            }
+        } else holder.albumArt.setImageBitmap(music.albumArt)
     }
 
-    private fun longToTime(time: Long): String {                                                      // convert the time to a string
-        val seconds = time / 1000
-        val minutes = seconds / 60
-        val remainingSeconds = seconds % 60
-        return String.format(Locale.getDefault(), "%02d:%02d", minutes, remainingSeconds)
-    }
-
-    override fun getItemCount(): Int = musicList.size + 2                                           // get the number of the musics scanned
+    override fun getItemCount(): Int = musicList.size
 
     fun setList(newList: List<Music>) {
+        val diffResult = DiffUtil.calculateDiff(MusicDiffCallback(musicList, newList))
         musicList = newList
-    }
-
-    fun getList(): List<Music> {
-        return musicList
+        diffResult.dispatchUpdatesTo(this)
     }
 }

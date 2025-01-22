@@ -107,14 +107,14 @@ class PlayerService : Service() {
                 override fun onPlay() {
                     super.onPlay()
                     if (musicListPosition != -1) {
-                        if (stateCheck(3)) {
+                        if (checkState(3)) {
                             if (checkBookmark(musicList[musicListPosition].id))
                                 PopUpWindow(this@PlayerService).popupMarker(musicListPosition, playbackSpeed)
                             else play(musicListPosition, playbackSpeed, 0)
                             updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                         } else {
                             pauseAndResume()
-                            if (stateCheck(1)) {
+                            if (checkState(1)) {
                                 updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                             } else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                         }
@@ -131,7 +131,7 @@ class PlayerService : Service() {
                 override fun onPause() {
                     super.onPause()
                     pauseAndResume()
-                    if (stateCheck(1)) updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+                    if (checkState(1)) updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                     else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                     updateNotification()
                 }
@@ -146,7 +146,7 @@ class PlayerService : Service() {
                 override fun onSeekTo(pos: Long) {
                     super.onSeekTo(pos)
                     seekTo(pos)
-                    if (stateCheck(1)) {
+                    if (checkState(1)) {
                         updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                     } else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                     updateNotification()
@@ -155,7 +155,7 @@ class PlayerService : Service() {
                 override fun onSkipToNext() {
                     super.onSkipToNext()
                     playNext()
-                    if (stateCheck(1)) {
+                    if (checkState(1)) {
                         updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                     } else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                     updateNotification()
@@ -164,7 +164,7 @@ class PlayerService : Service() {
                 override fun onSkipToPrevious() {
                     super.onSkipToPrevious()
                     playPrevious()
-                    if (stateCheck(1)) {
+                    if (checkState(1)) {
                         updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                     } else updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                     updateNotification()
@@ -200,15 +200,15 @@ class PlayerService : Service() {
     }
 
     private fun setPlaybackState() {
-        if (stateCheck(1)) { updatePlaybackState(PlaybackStateCompat.STATE_PLAYING) }
-        else if (stateCheck(2)) { updatePlaybackState(PlaybackStateCompat.STATE_PAUSED) }
-        else if (stateCheck(3) || stateCheck(4)) { updatePlaybackState(PlaybackStateCompat.STATE_STOPPED) }
-        else if (stateCheck(5)) { updatePlaybackState(PlaybackStateCompat.STATE_BUFFERING) }
+        if (checkState(1)) { updatePlaybackState(PlaybackStateCompat.STATE_PLAYING) }
+        else if (checkState(2)) { updatePlaybackState(PlaybackStateCompat.STATE_PAUSED) }
+        else if (checkState(3) || checkState(4)) { updatePlaybackState(PlaybackStateCompat.STATE_STOPPED) }
+        else if (checkState(5)) { updatePlaybackState(PlaybackStateCompat.STATE_BUFFERING) }
         else { updatePlaybackState(PlaybackStateCompat.STATE_ERROR) }
     }
 
     fun updateNotification() {
-        val isPlaying = stateCheck(1)
+        val isPlaying = checkState(1)
         val duration = getDuration()
         val progress = getProgress()
 
@@ -293,7 +293,7 @@ class PlayerService : Service() {
         intent?.action?.let {
             when (it) {
                 "TOGGLE_PLAY_PAUSE" -> {
-                    if (stateCheck(3) || stateCheck(4)) {
+                    if (checkState(3) || checkState(4)) {
                         if (checkBookmark(musicList[musicListPosition].id))
                             PopUpWindow(this).popupMarker(musicListPosition, playbackSpeed)
                         else play(musicListPosition, playbackSpeed, 0)
@@ -351,19 +351,23 @@ class PlayerService : Service() {
 
     fun getMusicPosition(music: Music): Int = musicList.indexOf(music)
 
-    fun getPositionTitle(position: Int): String = musicList[position].title
+    fun getPositionTitle(position: Int): String =
+        if (position in 0 until musicList.size) musicList[position].title
+        else getString(R.string.defualt_playing)
 
-    fun getPositionId(position: Int): Long = musicList[position].id
+    fun getPositionId(position: Int): Long =
+        if (position in 0 until musicList.size) musicList[position].id
+        else 0
 
     fun getThisPosition(): Int = musicListPosition
 
     fun getThisTitle(): String =
-        if (musicList.isEmpty()) getString(R.string.defualt_playing)
-        else musicList[if (musicListPosition == -1) 0 else musicListPosition].title
+        if (musicList.isEmpty() || musicListPosition == -1) getString(R.string.defualt_playing)
+        else musicList[musicListPosition].title
 
     private fun getThisArtist(): String =
-        if (musicList.isEmpty()) getString(R.string.unknown_artisit)
-        else musicList[if (musicListPosition == -1) 0 else musicListPosition].artist
+        if (musicList.isEmpty() || musicListPosition == -1) getString(R.string.unknown_artisit)
+        else musicList[musicListPosition].artist
 
     fun getThisAlbumArt(): Bitmap? =
         if (musicList.isEmpty() || musicListPosition == -1) null
@@ -400,7 +404,7 @@ class PlayerService : Service() {
     fun startPlaying(new: Boolean, position: Int, speed: Float) {
         playbackSpeed = speed
         if (new) {
-            if (checkBookmark(musicList[position].id))
+            if (position in 0 until musicList.size && checkBookmark(musicList[position].id))
                 PopUpWindow(this).popupMarker(position, speed)
             else play(position, speed, 0)
         } else if (musicListPosition == -1) {
@@ -411,7 +415,7 @@ class PlayerService : Service() {
     }
 
     fun play(position: Int, speed: Float, start: Long) {
-        if (!stateCheck(4) || !stateCheck(3)) { mediaPlayer?.stop() }
+        if (!checkState(4) || !checkState(3)) { mediaPlayer?.stop() }
         musicListPosition = if (position == -1) 0
         else position
         val uri = musicList[musicListPosition].uri
@@ -463,8 +467,8 @@ class PlayerService : Service() {
 
     fun pauseAndResume() {
         mediaPlayer?.let {
-            if (stateCheck(1)) { it.pause() }
-            else if (stateCheck(2)) { it.play() }
+            if (checkState(1)) { it.pause() }
+            else if (checkState(2)) { it.play() }
             else {
                 if (checkBookmark(musicList[if (musicListPosition == -1) 0 else musicListPosition].id))
                     PopUpWindow(this).popupMarker(musicListPosition, playbackSpeed)
@@ -476,7 +480,7 @@ class PlayerService : Service() {
 
     fun stop() {
         mediaPlayer?.let {
-            if (!stateCheck(3)) { it.stop() }
+            if (!checkState(3)) { it.stop() }
         }
         setPlaybackState()
         updateNotification()
@@ -529,7 +533,11 @@ class PlayerService : Service() {
 
     private fun updateInformation() {
         setPlaybackState()
-        if (stateCheck(4) && musicListPosition != -1 ) {
+        val currentMusicUri = mediaPlayer?.currentMediaItem?.localConfiguration?.uri
+        if (currentMusicUri != null) {
+            musicListPosition = musicList.indexOfFirst { it.uri == currentMusicUri }
+        }
+        if (checkState(4) && musicListPosition != -1 ) {
             if (!isContinue) { mediaPlayer?.stop() }
             else { playNext() }
         }
@@ -537,7 +545,27 @@ class PlayerService : Service() {
 
     }
 
-    fun stateCheck(type: Int) : Boolean {
+    fun checkAvailability() {
+        if (musicList.isEmpty()) {
+            musicListPosition = -1
+            stop()
+            PopUpWindow(this).popUpAlert(musicList.size)
+            return
+        }
+        if (musicListPosition >= musicList.size) {
+            musicListPosition = -1
+            stop()
+            return
+        }
+        val currentUri = mediaPlayer?.currentMediaItem?.localConfiguration?.uri
+        if (currentUri != null) {
+            musicListPosition = musicList.indexOfFirst { it.uri == currentUri }
+        }
+        if (musicListPosition == -1) stop()
+        return
+    }
+
+    fun checkState(type: Int) : Boolean {
         return when (type) {
             1 -> {
                 mediaPlayer?.isPlaying == true
