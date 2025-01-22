@@ -502,7 +502,7 @@ class PlayListActivity : AppCompatActivity() {
                 putFloat("Speed", speedVal)
                 putBoolean("continuePlay", continuePlay)
                 putBoolean("isInOrderQueue", isInOrderQueue)
-                if (hasPermissions() || isBound) {
+                if (hasPermissions() && isBound) {
                     val bookmarkString = mediaPlayerService.getBookmark().toString()
                     putString("bookmarks", bookmarkString)
                 }
