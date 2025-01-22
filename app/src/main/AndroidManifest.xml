@@ -55,10 +55,10 @@
             android:exported="false"
             android:configChanges="orientation|screenSize" />
         <service
-            android:name=".PlayerService"
+            android:name=".services.PlayerService"
             android:foregroundServiceType="mediaPlayback" >
         </service>
-        <receiver android:name=".PlayerControlReceiver" />
+        <receiver android:name=".services.PlayerControlReceiver" />
     </application>
 
 </manifest>

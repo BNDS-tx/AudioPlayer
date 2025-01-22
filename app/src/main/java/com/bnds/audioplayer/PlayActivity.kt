@@ -17,7 +17,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.bnds.audioplayer.databinding.ActivityPlayBinding
-import com.bnds.audioplayer.uiTools.IconTools
+import com.bnds.audioplayer.services.*
+import com.bnds.audioplayer.uiTools.*
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
 import com.google.android.material.textview.MaterialTextView
@@ -25,7 +26,6 @@ import com.google.android.material.textview.MaterialTextView
 open class PlayActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlayBinding
     private var speedVal: Float = 1F
-    lateinit var musicPlayerService: PlayerService
     var musicSize: Int = 0
     var musicPosition: Int = -1
     private var continuePlay: Boolean = false
@@ -38,6 +38,8 @@ open class PlayActivity : AppCompatActivity() {
     private var needRefresh: Boolean = false
     private val handler = Handler(Looper.getMainLooper())
 
+    private val uiAdapter = UIAdapter(this)
+    lateinit var musicPlayerService: PlayerService
     private var isBound = false
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -165,6 +167,7 @@ open class PlayActivity : AppCompatActivity() {
 
         bindService()                                                                               // bind service
 
+
         onBackPressedDispatcher.addCallback(this) {                                          // force to transfer the data back to PlayListActivity
             endActivity()
         }
@@ -198,12 +201,12 @@ open class PlayActivity : AppCompatActivity() {
             setCurrentBookmark()
         }
 
-        UIAdapter(this).updateBarProgress(
+        uiAdapter.updateBarProgress(
             progressBar, musicPlayerService.getProgress(), musicPlayerService.getDuration()
         )
         setProgressBar()
 
-        IconTools().setMethodImageIcon(playMethodIcon, playMethodVal)
+        IconTools.setMethodImageIcon(playMethodIcon, playMethodVal)
         playMethodIcon.setOnClickListener {
             updateMethodVal()
         }
@@ -233,7 +236,7 @@ open class PlayActivity : AppCompatActivity() {
 
         checkPlayProgress()
         updateShowSpeed()
-        UIAdapter(this).refreshPage()
+        uiAdapter.refreshPage()
     }
 
     private fun initializeData() {
@@ -279,14 +282,14 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun pauseOrContinue() {
-        UIAdapter(this).setIcon()
+        uiAdapter.setIcon()
         if (musicPosition != musicPlayerService.getThisPosition()) {
             musicPosition = musicPlayerService.getThisPosition()
             musicPlayerService.pauseAndResume()
-            UIAdapter(this).refreshPage()
+            uiAdapter.refreshPage()
         } else {
             musicPlayerService.pauseAndResume()
-            UIAdapter(this).refreshIconAndBar()
+            uiAdapter.refreshIconAndBar()
         }
     }
 
@@ -295,7 +298,7 @@ open class PlayActivity : AppCompatActivity() {
             musicPlayerService.setCurrentBookmark()
             bookMarker = musicPlayerService.getBookmark()
         }
-        UIAdapter(this).setIcon()
+        uiAdapter.setIcon()
         needRefresh = !needRefresh
     }
 
@@ -328,7 +331,7 @@ open class PlayActivity : AppCompatActivity() {
             2 -> playMethodVal = 0
         }
         setMethod(playMethodVal)
-        IconTools().setMethodImageIcon(playMethodIcon, playMethodVal)
+        IconTools.setMethodImageIcon(playMethodIcon, playMethodVal)
     }
 
     private fun setMethod(method: Int) {
@@ -382,15 +385,15 @@ open class PlayActivity : AppCompatActivity() {
             musicPlayerService.playPrevious()
         }
         musicPosition = musicPlayerService.getThisPosition()
-        UIAdapter(this).refreshPage()
+        uiAdapter.refreshPage()
     }
 
     private fun checkPlayProgress() {
         bookMarker = musicPlayerService.getBookmark()
         if (musicPosition != musicPlayerService.getThisPosition()) {
             musicPosition = musicPlayerService.getThisPosition()
-            UIAdapter(this).refreshPage()
-        } else UIAdapter(this).refreshIconAndBar()
+            uiAdapter.refreshPage()
+        } else uiAdapter.refreshIconAndBar()
         handler.postDelayed({ checkPlayProgress() }, 100)
     }
 }

@@ -1,4 +1,4 @@
-package com.bnds.audioplayer
+package com.bnds.audioplayer.fileTools
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -11,8 +11,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 
 class FileHelper {
-    companion object {
 
+    companion object {
         private val executor = Executors.newFixedThreadPool(4) // 创建固定大小的线程池
         private val semaphore = Semaphore(2) // 限制最大并发任务数
 

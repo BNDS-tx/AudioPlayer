@@ -1,6 +1,7 @@
-package com.bnds.audioplayer
+package com.bnds.audioplayer.listTools
 
 import androidx.recyclerview.widget.DiffUtil
+import com.bnds.audioplayer.fileTools.*
 
 class MusicDiffCallback(
     private val oldList: List<Music>,

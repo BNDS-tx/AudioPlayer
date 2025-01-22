@@ -1,15 +1,14 @@
-package com.bnds.audioplayer
+package com.bnds.audioplayer.uiTools
 
 import android.content.res.Configuration
 import android.widget.ImageView
 import androidx.cardview.widget.CardView
-import com.bnds.audioplayer.uiTools.ColorTools
-import com.bnds.audioplayer.uiTools.IconTools
+import com.bnds.audioplayer.*
 import com.google.android.material.slider.Slider
 
 class UIAdapter(private val activity: PlayActivity) {
 
-    fun refreshPage () {
+    fun refreshPage() {
         setColor()
         updateTitle()
         updateArt()
@@ -21,7 +20,7 @@ class UIAdapter(private val activity: PlayActivity) {
         )
     }
 
-    fun refreshIconAndBar () {
+    fun refreshIconAndBar() {
         setIcon()
         updateBarProgress(
             activity.progressBar,
@@ -36,8 +35,8 @@ class UIAdapter(private val activity: PlayActivity) {
         var albumDominantColor =
             if (activity.musicPosition == -1) 0
             else if (activity.musicSize == 0) 0
-            else ColorTools().extractDominantColor(activity.musicPlayerService.getThisAlbumArt())
-        ColorTools().updatePageColor(
+            else ColorTools.extractDominantColor(activity.musicPlayerService.getThisAlbumArt())
+        ColorTools.updatePageColor(
             albumDominantColor,
             activity.rootView,
             activity.findViewById<CardView>(R.id.albumCard),
@@ -54,8 +53,8 @@ class UIAdapter(private val activity: PlayActivity) {
             activity.playMethodIcon,
             activity
         )
-        ColorTools().setBarColor(activity.progressBar, albumDominantColor, activity)
-        ColorTools().updateTextsColor(
+        ColorTools.setBarColor(activity.progressBar, albumDominantColor, activity)
+        ColorTools.updateTextsColor(
             albumDominantColor,
             isDarkMode,
             activity.speedSlower,
@@ -89,14 +88,14 @@ class UIAdapter(private val activity: PlayActivity) {
     }
 
     fun setIcon() {
-        IconTools().setPlayIcon(activity.playButton, activity.musicPlayerService.stateCheck(1))
+        IconTools.setPlayIcon(activity.playButton, activity.musicPlayerService.stateCheck(1))
         if (activity.musicPosition >= 0) {
-            IconTools().setBookmarkIcon(activity.bookMarkButton,
+            IconTools.setBookmarkIcon(activity.bookMarkButton,
                 activity.bookMarker[
                     activity.musicPlayerService.getPositionId(activity.musicPosition)
             ])
         } else {
-            IconTools().setBookmarkIcon(activity.bookMarkButton, null)
+            IconTools.setBookmarkIcon(activity.bookMarkButton, null)
         }
     }
 }

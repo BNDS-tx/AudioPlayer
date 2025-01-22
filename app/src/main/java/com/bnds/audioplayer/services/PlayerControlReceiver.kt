@@ -1,4 +1,4 @@
-package com.bnds.audioplayer
+package com.bnds.audioplayer.services
 
 import android.content.BroadcastReceiver
 import android.content.Context

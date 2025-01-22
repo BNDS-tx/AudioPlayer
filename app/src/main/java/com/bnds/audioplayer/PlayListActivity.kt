@@ -27,8 +27,10 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayListBinding
-import com.bnds.audioplayer.uiTools.ColorTools
-import com.bnds.audioplayer.uiTools.IconTools
+import com.bnds.audioplayer.fileTools.*
+import com.bnds.audioplayer.listTools.*
+import com.bnds.audioplayer.services.*
+import com.bnds.audioplayer.uiTools.*
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textview.MaterialTextView
 
@@ -46,6 +48,8 @@ class PlayListActivity : AppCompatActivity() {
     private var isNewOpen = false
     private var isDirectionChanged = false
 
+    private lateinit var listDiffResult: MusicDiffCallback
+    private lateinit var scroller : CenterSmoothScroller
     private lateinit var mediaPlayerService: PlayerService
     private var isBound = false
     private val connection = object : ServiceConnection {
@@ -180,19 +184,20 @@ class PlayListActivity : AppCompatActivity() {
         }
     }
 
-    private fun adapterBuilder() {
+    private fun initializeComponents() {
         val transferData = Bundle()
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         recyclerView.layoutManager = GridLayoutManager(this, if (isLandscape) 2 else 1)
         musicAdapter = MusicAdapter(
-            mediaPlayerService.getMusicList(), mediaPlayerService.getBookmark()) { music ->
+            mediaPlayerService.getMusicList()
+        ) { music ->
             setTransferData(
                 transferData,
                 null, null, null,
                 mediaPlayerService.getMusicPosition(music),
                 true
             )
-            val intent : Intent = Intent(this, PlayActivity::class.java).apply(
+            val intent: Intent = Intent(this, PlayActivity::class.java).apply(
                 fun Intent.() {
                     putExtras(transferData)
                     putExtra("valid", true)
@@ -202,6 +207,7 @@ class PlayListActivity : AppCompatActivity() {
             handler.removeCallbacksAndMessages(null)
             activityResultLauncher.launch(intent)
         }
+        scroller = CenterSmoothScroller(this)
     }
 
     private fun checkPlayProgress() {
@@ -225,7 +231,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun handleMusicPlayback() {
-        adapterBuilder()
+        initializeComponents()
         if (isNewOpen) {
             updateMusicList()
             isNewOpen = false
@@ -240,8 +246,7 @@ class PlayListActivity : AppCompatActivity() {
 
         titleText.setOnClickListener {
             if (musicPosition != -1)
-                CenterSmoothScroller(this)
-                    .smoothScrollToPositionCentered(recyclerView, musicPosition + 1)
+                scroller.smoothScrollToPositionCentered(recyclerView, musicPosition + 1)
         }
 
         refreshButton.setOnClickListener {
@@ -265,14 +270,14 @@ class PlayListActivity : AppCompatActivity() {
             playNextController(mediaPlayerService)
         }
 
-        IconTools().setMethodButtonIcon(playMethodButton, playMethodVal)
+        IconTools.setMethodButtonIcon(playMethodButton, playMethodVal)
         playMethodButton.setOnClickListener {
             when (playMethodVal) {
                 0 -> playMethodVal = 1
                 1 -> playMethodVal = 2
                 2 -> playMethodVal = 0
             }
-            IconTools().setMethodButtonIcon(playMethodButton, playMethodVal)
+            IconTools.setMethodButtonIcon(playMethodButton, playMethodVal)
             setMethod(playMethodVal)
         }
 
@@ -307,7 +312,7 @@ class PlayListActivity : AppCompatActivity() {
         setTitle(R.string.title_activity_play_list)
 
         sharedPreferencesLoadData()
-        ColorTools().initColors(this)
+        ColorTools.initColors(this)
 
         val intent = Intent(this, PlayerService::class.java)
         if (hasPermissions()) {
@@ -320,8 +325,8 @@ class PlayListActivity : AppCompatActivity() {
 
     private fun loadData() {
         if (!hasPermissions()) { requestPermissions(); return }
-        mediaPlayerService.setMusicList(Scanner(this)
-            .scanMusicFiles(mediaPlayerService.getMusicList()))
+        mediaPlayerService.setMusicList(
+            Scanner.scanMusicFiles(this, mediaPlayerService.getMusicList()))
         musicSize = mediaPlayerService.getMusicSize()
         mediaPlayerService.updateNotification()
     }
@@ -392,7 +397,7 @@ class PlayListActivity : AppCompatActivity() {
     }
 
     private fun setIcon() {
-        IconTools().setPlayIcon(playButton, mediaPlayerService.stateCheck(1))
+        IconTools.setPlayIcon(playButton, mediaPlayerService.stateCheck(1))
     }
 
     private fun setImage() {
@@ -472,7 +477,8 @@ class PlayListActivity : AppCompatActivity() {
         val oldMusicList = musicAdapter.getList()
         loadData()
         val newMusicList = mediaPlayerService.getMusicList()
-        val diffResult = DiffUtil.calculateDiff(MusicDiffCallback(oldMusicList, newMusicList))
+        listDiffResult = MusicDiffCallback(oldMusicList, newMusicList)
+        val diffResult = DiffUtil.calculateDiff(listDiffResult)
         musicAdapter.setList(newMusicList)
         diffResult.dispatchUpdatesTo(musicAdapter)
     }

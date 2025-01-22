@@ -1,4 +1,4 @@
-package com.bnds.audioplayer
+package com.bnds.audioplayer.services
 
 import android.app.*
 import android.content.*
@@ -16,6 +16,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.bnds.audioplayer.fileTools.*
+import com.bnds.audioplayer.*
 import kotlin.random.Random
 
 class PlayerService : Service() {

@@ -1,4 +1,4 @@
-package com.bnds.audioplayer
+package com.bnds.audioplayer.listTools
 
 import android.view.LayoutInflater
 import android.view.View
@@ -6,11 +6,12 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bnds.audioplayer.fileTools.*
+import com.bnds.audioplayer.*
 import java.util.Locale
 
 class MusicAdapter(
     private var musicList: List<Music>,
-    private var bookMarker: MutableMap<Long, Long>,
     private val onItemClick: (Music) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -87,19 +88,6 @@ class MusicAdapter(
                 }
             } else holder.albumArt.setImageBitmap(music.albumArt)
         }
-    }
-
-    private fun isNeedBookmark(musicId: Long): Boolean {                                            // check if the music has been bookmarked
-        if (bookMarker.isEmpty()) {
-            return false
-        }
-        if (!bookMarker.containsKey(musicId)) {
-            return false
-        }
-        if (bookMarker[musicId] == 0.toLong()) {
-            return false
-        }
-        return true
     }
 
     private fun longToTime(time: Long): String {                                                      // convert the time to a string
