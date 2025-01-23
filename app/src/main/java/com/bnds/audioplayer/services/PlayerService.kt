@@ -3,9 +3,6 @@ package com.bnds.audioplayer.services
 import android.app.*
 import android.content.*
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.media.MediaMetadataRetriever
-import android.net.Uri
 import android.os.*
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -16,8 +13,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import com.bnds.audioplayer.fileTools.*
 import com.bnds.audioplayer.*
+import com.bnds.audioplayer.fileTools.*
 import kotlin.random.Random
 
 class PlayerService : Service() {
@@ -374,28 +371,9 @@ class PlayerService : Service() {
         else
             if (musicList[musicListPosition].albumArt != null)
                 musicList[musicListPosition].albumArt
-            else getAlbumArtFromUri(
-                musicList[musicListPosition].uri
+            else FileScanner.getAlbumArtFromUri(
+                this, musicList[musicListPosition].uri
             )
-
-    private fun getAlbumArtFromUri(uri: Uri): Bitmap? {
-        var retriever: MediaMetadataRetriever? = null
-        return try {
-            retriever = MediaMetadataRetriever()
-            retriever.setDataSource(this, uri) // 通过 Uri 设置数据源
-            val embeddedPicture = retriever.embeddedPicture
-            if (embeddedPicture != null) {
-                BitmapFactory.decodeByteArray(embeddedPicture, 0, embeddedPicture.size)
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            Log.e("AlbumArt", "Error retrieving album art from Uri: $uri", e)
-            null
-        } finally {
-            retriever?.release()
-        }
-    }
 
     fun getDuration(): Long = mediaPlayer?.duration ?: 100000
 

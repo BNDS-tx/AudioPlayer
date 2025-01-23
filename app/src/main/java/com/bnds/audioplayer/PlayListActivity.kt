@@ -14,7 +14,6 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Parcelable
 import android.util.TypedValue
-import android.view.ViewTreeObserver
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -325,7 +324,7 @@ class PlayListActivity : AppCompatActivity() {
     private fun loadData() {
         if (!hasPermissions()) { requestPermissions(); return }
         mediaPlayerService.setMusicList(
-            Scanner.scanMusicFiles(this, mediaPlayerService.getMusicList()))
+            FileScanner.scanMusicFiles(this, mediaPlayerService.getMusicList()))
         musicSize = mediaPlayerService.getMusicSize()
         mediaPlayerService.checkAvailability()
         mediaPlayerService.updateNotification()

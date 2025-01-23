@@ -56,17 +56,13 @@ class MusicAdapter(
             holder.bookmark.text = ""
         }
         if (music.albumArt == null) {
-            FileHelper.getFilePathFromUri(
+            FileScanner.getAlbumArtAsynchronously(
                 holder.itemView.context,
                 music.uri
-            ) { filePath ->             // get file path asynchronously
-                if (filePath != null) {
-                    FileHelper.getAlbumArt(filePath) { bitmap ->                                        // update the album art after getting it asynchronously
-                        holder.albumArt.post {                                                          // update the UI on the main thread
-                            holder.albumArt.setImageBitmap(bitmap)
-                            music.albumArt = bitmap
-                        }
-                    }
+            ) { bitmap ->
+                holder.albumArt.post {                                                          // update the UI on the main thread
+                    holder.albumArt.setImageBitmap(bitmap)
+                    music.albumArt = bitmap
                 }
             }
         } else holder.albumArt.setImageBitmap(music.albumArt)

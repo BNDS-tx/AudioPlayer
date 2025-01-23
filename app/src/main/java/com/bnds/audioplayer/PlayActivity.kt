@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.provider.MediaStore
 import android.view.View
 import android.widget.ImageView
 import androidx.activity.addCallback
@@ -17,6 +16,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.bnds.audioplayer.databinding.ActivityPlayBinding
+import com.bnds.audioplayer.fileTools.*
 import com.bnds.audioplayer.services.*
 import com.bnds.audioplayer.uiTools.*
 import com.google.android.material.button.MaterialButton
@@ -177,18 +177,31 @@ open class PlayActivity : AppCompatActivity() {
         musicSize = musicPlayerService.getMusicSize()
         musicPlayerService.setContext(this)
 
+        if (musicPlayerService.getMusicList().isEmpty())
+            musicPlayerService.setMusicList(FileScanner.scanMusicFiles(
+                this, musicPlayerService.getMusicList()
+            ))
         initializeData()
         checkUsability()
 
         if (openFromFile != null) {
-            for (music in musicPlayerService.getMusicList()) {
-                if (getRealPathFromURI(music.uri) == getRealPathFromURI(openFromFile!!)) {
-                    val position = musicPlayerService.getMusicPosition(music)
-                    musicPlayerService.startPlaying(true, position, speedVal)
-                    openFromFile = null
-                    break
-                }
+            if (!musicPlayerService.getMusicList().any {
+                    FileScanner.getFilePathFromUri(this, it.uri) ==
+                            FileScanner.getFilePathFromUri(this, openFromFile!!)
+            }) {
+                val music = FileScanner.getMusicFromUri(this, openFromFile!!)
+                var newMusicList = mutableListOf<Music>()
+                newMusicList.addAll(musicPlayerService.getMusicList())
+                newMusicList.add(music!!)
+                musicPlayerService.setMusicList(newMusicList)
             }
+            val position =
+                musicPlayerService.getMusicList().indexOfFirst {
+                    FileScanner.getFilePathFromUri(this, it.uri) ==
+                            FileScanner.getFilePathFromUri(this, openFromFile!!)
+                }
+            musicPlayerService.startPlaying(true, position, speedVal)
+            openFromFile = null
         } else musicPlayerService.startPlaying(new, musicPosition, speedVal); new = false
 
         musicPosition = musicPlayerService.getThisPosition()
@@ -266,19 +279,6 @@ open class PlayActivity : AppCompatActivity() {
             nextButton.isEnabled = true
             previousButton.isEnabled = true
         }
-    }
-
-    private fun getRealPathFromURI(uri: Uri): String? {
-        val projection = arrayOf(MediaStore.Audio.Media.DATA)
-        val cursor = contentResolver.query(uri, projection, null, null, null)
-        cursor?.let {
-            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-            cursor.moveToFirst()
-            val filePath = cursor.getString(columnIndex)
-            cursor.close()
-            return filePath
-        }
-        return null
     }
 
     private fun pauseOrContinue() {
