@@ -1,15 +1,21 @@
 package com.bnds.audioplayer
 
+import android.app.Dialog
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.res.Configuration
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.view.LayoutInflater
 import android.view.View
+import android.view.WindowManager
 import android.widget.ImageView
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
@@ -26,7 +32,6 @@ import com.google.android.material.textview.MaterialTextView
 open class PlayActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlayBinding
     private var speedVal: Float = 1F
-    var musicSize: Int = 0
     var musicPosition: Int = -1
     private var continuePlay: Boolean = false
     private var isInOrderQueue: Boolean = true
@@ -34,6 +39,7 @@ open class PlayActivity : AppCompatActivity() {
     var bookMarker: MutableMap<Long, Long> = mutableMapOf()
     private var new: Boolean = false
     private var openFromFile: Uri? = null
+    private lateinit var loading: Dialog
     var pauseUpdate: Boolean = false
     private var needRefresh: Boolean = false
     private val handler = Handler(Looper.getMainLooper())
@@ -162,11 +168,12 @@ open class PlayActivity : AppCompatActivity() {
         titleText = findViewById(R.id.titleText)
         titleBackground = findViewById(R.id.titleBackground)
         albumArt = findViewById(R.id.albumArt)
+        loading = loadingDialog(this)
 
         titleText.isSelected = true
+        if (openFromFile != null) loading.show()
 
         bindService()                                                                               // bind service
-
 
         onBackPressedDispatcher.addCallback(this) {                                          // force to transfer the data back to PlayListActivity
             endActivity()
@@ -174,7 +181,6 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun handleMusicPlayback() {
-        musicSize = musicPlayerService.getMusicSize()
         musicPlayerService.setContext(this)
 
         if (musicPlayerService.getMusicList().isEmpty())
@@ -185,22 +191,14 @@ open class PlayActivity : AppCompatActivity() {
         checkUsability()
 
         if (openFromFile != null) {
-            if (!musicPlayerService.getMusicList().any {
-                    FileScanner.getFilePathFromUri(this, it.uri) ==
-                            FileScanner.getFilePathFromUri(this, openFromFile!!)
-            }) {
-                val music = FileScanner.getMusicFromUri(this, openFromFile!!)
-                var newMusicList = mutableListOf<Music>()
-                newMusicList.addAll(musicPlayerService.getMusicList())
-                newMusicList.add(music!!)
-                musicPlayerService.setMusicList(newMusicList)
-            }
             val position =
                 musicPlayerService.getMusicList().indexOfFirst {
                     FileScanner.getFilePathFromUri(this, it.uri) ==
                             FileScanner.getFilePathFromUri(this, openFromFile!!)
                 }
             musicPlayerService.startPlaying(true, position, speedVal)
+            if (loading.isShowing) loading.dismiss()
+            uiAdapter.refreshPage()
             openFromFile = null
         } else musicPlayerService.startPlaying(new, musicPosition, speedVal); new = false
 
@@ -262,7 +260,7 @@ open class PlayActivity : AppCompatActivity() {
     }
 
     private fun checkUsability() {
-        if (musicSize == 0) {
+        if (musicPlayerService.getMusicList().isEmpty()) {
             playButton.isEnabled = false
             bookMarkButton.isEnabled = false
             speedSlower.isEnabled = false
@@ -279,6 +277,21 @@ open class PlayActivity : AppCompatActivity() {
             nextButton.isEnabled = true
             previousButton.isEnabled = true
         }
+    }
+
+    fun loadingDialog(context: Context): Dialog {
+        val dialog = Dialog(context)
+        val view = LayoutInflater.from(context).inflate(R.layout.dialog_loading, null)
+        dialog.setContentView(view)
+
+        dialog.setCancelable(false)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.setLayout(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        )
+
+        return dialog
     }
 
     private fun pauseOrContinue() {

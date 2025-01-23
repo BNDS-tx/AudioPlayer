@@ -394,7 +394,7 @@ class PlayerService : Service() {
 
     fun play(position: Int, speed: Float, start: Long) {
         if (!checkState(4) || !checkState(3)) { mediaPlayer?.stop() }
-        musicListPosition = if (position == -1) 0
+        musicListPosition = if (position !in 0 until musicList.size) 0
         else position
         val uri = musicList[musicListPosition].uri
         playbackSpeed = speed

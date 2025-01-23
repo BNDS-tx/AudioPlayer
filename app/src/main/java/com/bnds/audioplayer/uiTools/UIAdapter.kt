@@ -34,7 +34,7 @@ class UIAdapter(private val activity: PlayActivity) {
                 Configuration.UI_MODE_NIGHT_YES
         var albumDominantColor =
             if (activity.musicPosition == -1) 0
-            else if (activity.musicSize == 0) 0
+            else if (activity.musicPlayerService.getMusicList().isEmpty()) 0
             else ColorTools.extractDominantColor(activity.musicPlayerService.getThisAlbumArt())
         ColorTools.updatePageColor(
             albumDominantColor,
