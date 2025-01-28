@@ -70,9 +70,11 @@ class MusicAdapter(
 
     override fun getItemCount(): Int = musicList.size
 
-    fun setList(newList: List<Music>) {
-        val diffResult = DiffUtil.calculateDiff(MusicDiffCallback(musicList, newList))
-        musicList = newList
+    fun setList(musics: List<Music>) {
+        val oldList = musicList
+        musicList = musics
+        val newList = musics
+        val diffResult = DiffUtil.calculateDiff(MusicDiffCallback(oldList, newList))
         diffResult.dispatchUpdatesTo(this)
     }
 }
