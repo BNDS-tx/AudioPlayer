@@ -51,9 +51,9 @@ class UIAdapter(private val activity: PlayActivity) {
             activity.previousButton,
             activity.playMethodBackground,
             activity.playMethodIcon,
+            activity.progressBar,
             activity
         )
-        ColorTools.setBarColor(activity.progressBar, albumDominantColor, activity)
         ColorTools.updateTextsColor(
             albumDominantColor,
             isDarkMode,

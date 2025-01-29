@@ -130,9 +130,10 @@
                         android:layout_height="85dp"
                         android:layout_marginTop="25dp"
                         android:layout_marginStart="20dp"
-                        android:backgroundTint="?attr/colorSurfaceContainer"
+                        android:backgroundTint="?attr/colorPrimary"
                         app:cardCornerRadius="23dp"
                         app:cardElevation="15dp"
+                        app:strokeWidth="0dp"
                         app:layout_constraintLeft_toLeftOf="parent"
                         app:layout_constraintTop_toTopOf="parent">
 
@@ -147,7 +148,7 @@
                             android:layout_height="match_parent"
                             android:background="@drawable/button_square"
                             app:iconSize="55dp"
-                            app:iconTint="?attr/colorPrimary"
+                            app:iconTint="?attr/colorPrimaryContainer"
                             android:padding="15dp" />
                     </com.google.android.material.card.MaterialCardView>
                 </androidx.constraintlayout.widget.ConstraintLayout>

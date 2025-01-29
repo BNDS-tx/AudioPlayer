@@ -69,7 +69,7 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@id/header"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintVertical_bias="0.65"
+        app:layout_constraintVertical_bias="0.5"
         app:layout_constraintHorizontal_bias="0.5">
 
         <LinearLayout
@@ -147,7 +147,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintVertical_bias="0.8"
+            app:layout_constraintVertical_bias="0.9"
             app:layout_constraintHorizontal_bias="0.5">
 
             <LinearLayout
@@ -215,6 +215,7 @@
         android:layout_gravity="center"
         app:cardCornerRadius="30dp"
         app:cardElevation="15dp"
+        app:strokeWidth="0dp"
         app:cardBackgroundColor="?attr/colorPrimary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

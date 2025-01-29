@@ -214,6 +214,7 @@
         android:layout_gravity="center"
         app:cardCornerRadius="30dp"
         app:cardElevation="15dp"
+        app:strokeWidth="0dp"
         app:cardBackgroundColor="?attr/colorPrimary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

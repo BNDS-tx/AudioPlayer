@@ -3,7 +3,6 @@ package com.bnds.audioplayer.uiTools
 import android.app.Activity
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.util.TypedValue
 import android.view.View
 import android.view.WindowInsetsController
@@ -87,6 +86,7 @@ class ColorTools {
             bookmarkBackground: CardView, bookMarkButton: MaterialButton,
             playButton: MaterialButton, nextButton: MaterialButton, previousButton: MaterialButton,
             playMethodBackground: CardView, playMethodIcon: ImageView,
+            progressBar: Slider,
             activity: Activity
         ) {
             initColors(activity)
@@ -117,6 +117,7 @@ class ColorTools {
             setButtonIconColor(iconColor, previousButton)
             setCardColor(color, playMethodBackground)
             setImageViewColor(iconColor, playMethodIcon)
+            setBarColor(iconColor, color, progressBar)
         }
 
         private fun setBackgroundColor(color: Int, background: View) {
@@ -143,12 +144,7 @@ class ColorTools {
             button.iconTint = ColorStateList.valueOf(color)
         }
 
-        fun setBarColor(sysBar: Slider, setColor: Int, activity: Activity) {
-            initColors(activity)
-            val vibrantColor = if (setColor == 0) colorPrimary
-            else lightenColor(setColor)
-            val mutedColor = if (setColor == 0) colorSurface
-            else darkenColor(setColor)
+        private fun setBarColor(vibrantColor: Int, mutedColor: Int, sysBar: Slider) {
             sysBar.trackActiveTintList = ColorStateList.valueOf(vibrantColor)
             sysBar.trackInactiveTintList = ColorStateList.valueOf(mutedColor)
             sysBar.thumbTintList = ColorStateList.valueOf(vibrantColor)
@@ -217,30 +213,6 @@ class ColorTools {
                 return 1
             }
             return 0
-        }
-
-        private fun lightenColor(color: Int): Int {
-            val red = Color.red(color)
-            val green = Color.green(color)
-            val blue = Color.blue(color)
-
-            val newRed = (red + (255 - red) * 0.6).toInt()
-            val newGreen = (green + (255 - green) * 0.6).toInt()
-            val newBlue = (blue + (255 - blue) * 0.6).toInt()
-
-            return Color.rgb(newRed, newGreen, newBlue)
-        }
-
-        private fun darkenColor(color: Int): Int {
-            val red = Color.red(color)
-            val green = Color.green(color)
-            val blue = Color.blue(color)
-
-            val newRed = (red * 0.6).toInt()
-            val newGreen = (green * 0.6).toInt()
-            val newBlue = (blue * 0.6).toInt()
-
-            return Color.rgb(newRed, newGreen, newBlue)
         }
     }
 }

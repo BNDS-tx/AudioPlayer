@@ -405,12 +405,6 @@ class PlayListActivity : AppCompatActivity() {
         playButtonImage.setImageBitmap(bitmap)
         val typedValue = TypedValue()
         theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
-        val colorPrimary = ColorStateList.valueOf(typedValue.data)
-        val colorWhite = ColorStateList.valueOf(getColor(R.color.white))
-        playButton.setIconTint(
-            if (bitmap != null) colorWhite
-            else colorPrimary
-        )
     }
 
     private fun setMethod(method: Int) {

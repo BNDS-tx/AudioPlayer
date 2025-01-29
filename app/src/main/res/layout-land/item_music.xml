@@ -14,12 +14,16 @@
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="46dp"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:backgroundTint="?attr/colorPrimary"
+        app:strokeWidth="0dp"
+        app:cardElevation="0dp" >
 
         <ImageView
             android:layout_width="30dp"
             android:layout_height="30dp"
             app:srcCompat="@drawable/ic_music_note_24px"
+            app:tint="?attr/colorOnPrimary"
             android:layout_gravity="center"/>
 
         <ImageView
