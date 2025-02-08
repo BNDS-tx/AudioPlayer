@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -186,7 +185,7 @@ class PlayListActivity : AppCompatActivity() {
         val transferData = Bundle()
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         recyclerView.layoutManager = GridLayoutManager(this, if (isLandscape) 2 else 1)
-        musicAdapter = MusicAdapter(
+        if (!::musicAdapter.isInitialized) musicAdapter = MusicAdapter(
             mediaPlayerService.getMusicList()
         ) { music ->
             setTransferData(
