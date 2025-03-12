@@ -156,7 +156,7 @@
                             android:layout_height="match_parent"
                             android:background="@drawable/button_square"
                             app:iconSize="55dp"
-                            app:iconTint="?attr/colorPrimaryContainer"
+                            app:iconTint="?attr/colorSurfaceContainer"
                             android:padding="15dp" />
                     </com.google.android.material.card.MaterialCardView>
                 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,13 +2,16 @@ package com.bnds.audioplayer.uiTools
 
 import android.app.Activity
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.util.TypedValue
 import android.view.View
 import android.view.WindowInsetsController
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import androidx.core.graphics.ColorUtils
 import androidx.palette.graphics.Palette
 import com.bnds.audioplayer.*
 import com.google.android.material.button.MaterialButton
@@ -18,9 +21,9 @@ class ColorTools {
 
     companion object {
         private var colorSurface: Int = 0
+        private var colorSurfaceInverse: Int = 0
         private var colorPrimary: Int = 0
         private var colorPrimaryContainer: Int = 0
-        private var colorSurfaceInverse: Int = 0
         private var colorOnPrimary: Int = 0
         private var colorOnSurface: Int = 0
         private var colorOnSurfaceInverse: Int = 0
@@ -35,6 +38,12 @@ class ColorTools {
             )
             colorSurface = typedValue.data
             theme.resolveAttribute(
+                com.google.android.material.R.attr.colorSurfaceInverse,
+                typedValue,
+                true
+            )
+            colorSurfaceInverse = typedValue.data
+            theme.resolveAttribute(
                 com.google.android.material.R.attr.colorPrimary,
                 typedValue,
                 true
@@ -46,12 +55,6 @@ class ColorTools {
                 true
             )
             colorPrimaryContainer = typedValue.data
-            theme.resolveAttribute(
-                com.google.android.material.R.attr.colorSurfaceInverse,
-                typedValue,
-                true
-            )
-            colorSurfaceInverse = typedValue.data
             theme.resolveAttribute(
                 com.google.android.material.R.attr.colorOnPrimary,
                 typedValue,
@@ -98,7 +101,6 @@ class ColorTools {
 
             setBackgroundColor(color, background)
             setCardColor(colorPrimary, albumCard)
-            setImageViewColor(colorPrimaryContainer, cardIcon)
             if (setColor == 0) {
                 setCardColor(colorPrimary, titleBackground)
                 setImageViewColor(colorPrimaryContainer, backButton)
@@ -146,7 +148,13 @@ class ColorTools {
 
         private fun setBarColor(vibrantColor: Int, mutedColor: Int, sysBar: Slider) {
             sysBar.trackActiveTintList = ColorStateList.valueOf(vibrantColor)
-            sysBar.trackInactiveTintList = ColorStateList.valueOf(mutedColor)
+            sysBar.trackInactiveTintList = ColorStateList.valueOf(
+                if (mutedColor == colorPrimaryContainer) colorSurface
+                else {
+                    if (checkIsLightColor(mutedColor) == 1) ColorUtils.blendARGB(mutedColor, Color.BLACK, 0.2f)
+                    else ColorUtils.blendARGB(mutedColor, Color.WHITE, 0.2f)
+                }
+            )
             sysBar.thumbTintList = ColorStateList.valueOf(vibrantColor)
         }
 
