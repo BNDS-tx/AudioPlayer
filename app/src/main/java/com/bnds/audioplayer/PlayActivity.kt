@@ -7,27 +7,33 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.res.Configuration
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
+import android.widget.LinearLayout
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.databinding.ActivityPlayBinding
 import com.bnds.audioplayer.fileTools.*
+import com.bnds.audioplayer.listTools.LyricsAdapter
 import com.bnds.audioplayer.services.*
 import com.bnds.audioplayer.uiTools.*
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
 import com.google.android.material.textview.MaterialTextView
+import androidx.core.view.isVisible
+import androidx.core.graphics.drawable.toDrawable
 
 open class PlayActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlayBinding
@@ -43,6 +49,10 @@ open class PlayActivity : AppCompatActivity() {
     var pauseUpdate: Boolean = false
     private var needRefresh: Boolean = false
     private val handler = Handler(Looper.getMainLooper())
+    var lyricLine: List<LyricLine> = listOf(
+        LyricLine(0, ""),
+        LyricLine(1500, "暂无歌词")
+    )
 
     private val uiAdapter = UIAdapter(this)
     lateinit var musicPlayerService: PlayerService
@@ -76,6 +86,10 @@ open class PlayActivity : AppCompatActivity() {
     lateinit var titleText: MaterialTextView
     lateinit var titleBackground: CardView
     lateinit var albumArt: ImageView
+    lateinit var albumCard: CardView
+    lateinit var lyricLayout: LinearLayout
+    lateinit var lyricView: RecyclerView
+    lateinit var lyricsAdapter: LyricsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -168,9 +182,13 @@ open class PlayActivity : AppCompatActivity() {
         titleText = findViewById(R.id.titleText)
         titleBackground = findViewById(R.id.titleBackground)
         albumArt = findViewById(R.id.albumArt)
+        albumCard = findViewById(R.id.albumCard)
+        lyricLayout = findViewById(R.id.lyricLayout)
+        lyricView = findViewById(R.id.lyricView)
         loading = loadingDialog(this)
 
         titleText.isSelected = true
+        lyricView.layoutManager = LinearLayoutManager(this)
         if (openFromFile != null) loading.show()
 
         bindService()                                                                               // bind service
@@ -212,8 +230,11 @@ open class PlayActivity : AppCompatActivity() {
             setCurrentBookmark()
         }
 
-        uiAdapter.updateBarProgress(
-            progressBar, musicPlayerService.getProgress(), musicPlayerService.getDuration()
+        uiAdapter.setLyricList(lyricView, lyricLine)
+        uiAdapter.updateBarProgressNLyricList(
+            progressBar, musicPlayerService.getProgress(),
+            musicPlayerService.getDuration(),
+            lyricLine
         )
         setProgressBar()
 
@@ -245,6 +266,27 @@ open class PlayActivity : AppCompatActivity() {
             endActivity()
         }
 
+        albumArt.setOnClickListener {
+            showNHideAlbum(albumCard)
+        }
+
+        lyricView.setOnClickListener {
+            showNHideAlbum(albumCard)
+        }
+
+        lyricView.setOnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_UP -> {
+                    v.performClick()
+                }
+            }
+            false // 返回 false 保证正常滚动
+        }
+
+        lyricLayout.setOnClickListener {
+            showNHideAlbum(albumCard)
+        }
+
         checkPlayProgress()
         updateShowSpeed()
         uiAdapter.refreshPage()
@@ -257,6 +299,7 @@ open class PlayActivity : AppCompatActivity() {
         playMethodVal = if (continuePlay) {
             if (isInOrderQueue) 1 else 2
         } else 0
+        updateLyricList()
     }
 
     private fun checkUsability() {
@@ -279,13 +322,18 @@ open class PlayActivity : AppCompatActivity() {
         }
     }
 
+    private fun showNHideAlbum(card: CardView) {
+        if (card.isVisible) card.visibility = View.GONE
+        else card.visibility = View.VISIBLE
+    }
+
     fun loadingDialog(context: Context): Dialog {
         val dialog = Dialog(context)
         val view = LayoutInflater.from(context).inflate(R.layout.dialog_loading, null)
         dialog.setContentView(view)
 
         dialog.setCancelable(false)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
         dialog.window?.setLayout(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT
@@ -335,6 +383,15 @@ open class PlayActivity : AppCompatActivity() {
             val totalInSeconds = (valueToInMillis % 60000) / 1000
             "$timeInMinutes:$timeInSeconds - $totalInMinutes:$totalInSeconds"
         }
+    }
+
+    fun updateLyricList() {
+        if (musicPosition == -1) return
+        val line0 = musicPlayerService.getCurrentLyricsOnly()
+        lyricLine = listOf(
+            LyricLine(0, musicPlayerService.getThisArtist() + if (line0!=null) " 固定歌词：" else ""),
+            LyricLine(1500, line0 ?:"暂无歌词")
+        )
     }
 
     private fun updateMethodVal() {

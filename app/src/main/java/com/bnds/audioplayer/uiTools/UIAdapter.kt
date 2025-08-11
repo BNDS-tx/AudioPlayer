@@ -3,7 +3,10 @@ package com.bnds.audioplayer.uiTools
 import android.content.res.Configuration
 import android.widget.ImageView
 import androidx.cardview.widget.CardView
+import androidx.recyclerview.widget.RecyclerView
 import com.bnds.audioplayer.*
+import com.bnds.audioplayer.fileTools.LyricLine
+import com.bnds.audioplayer.listTools.LyricsAdapter
 import com.google.android.material.slider.Slider
 
 class UIAdapter(private val activity: PlayActivity) {
@@ -13,19 +16,27 @@ class UIAdapter(private val activity: PlayActivity) {
         updateTitle()
         updateArt()
         setIcon()
-        updateBarProgress(
+        activity.updateLyricList()
+        setLyricList(
+            activity.lyricView,
+            activity.lyricLine
+        )
+
+        updateBarProgressNLyricList(
             activity.progressBar,
             activity.musicPlayerService.getProgress(),
-            activity.musicPlayerService.getDuration()
+            activity.musicPlayerService.getDuration(),
+            activity.lyricLine
         )
     }
 
     fun refreshIconAndBar() {
         setIcon()
-        updateBarProgress(
+        updateBarProgressNLyricList(
             activity.progressBar,
             activity.musicPlayerService.getProgress(),
-            activity.musicPlayerService.getDuration()
+            activity.musicPlayerService.getDuration(),
+            activity.lyricLine
         )
     }
 
@@ -64,12 +75,37 @@ class UIAdapter(private val activity: PlayActivity) {
         )
     }
 
-    fun updateBarProgress(progressBar: Slider, progress: Long, duration: Long) {
+    fun setLyricList(lyricView: RecyclerView, lyricLine: List<LyricLine>) {
+        activity.lyricsAdapter = LyricsAdapter(
+            lyricLine,
+            activity.progressBar.trackActiveTintList,
+            activity.progressBar.trackInactiveTintList)
+        lyricView.adapter = activity.lyricsAdapter
+    }
+
+    fun findCurrentLyricLine(currentTime: Long, lyricLine: List<LyricLine>): Int {
+        var pos = -1
+        for (i in lyricLine.indices) {
+            if (currentTime >= lyricLine[i].time &&
+                (i == lyricLine.size - 1 || currentTime < lyricLine[i + 1].time)) {
+                pos = i
+                break
+            }
+        }
+        return pos
+    }
+
+    fun updateBarProgressNLyricList(progressBar: Slider, progress: Long, duration: Long, lyricLine: List<LyricLine>) {
         if (activity.pauseUpdate) return
         if (progress <= duration && !activity.musicPlayerService.checkState(0)
             && duration != 0.toLong()) {
             progressBar.value = progress.toFloat()
             progressBar.valueTo = duration.toFloat()
+        }
+        val newPos = findCurrentLyricLine(progress, lyricLine)
+        if (newPos >= 0) {
+            activity.lyricsAdapter.updateCurrentLine(newPos)
+            activity.lyricView.smoothScrollToPosition(newPos)
         }
     }
 

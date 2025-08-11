@@ -15,6 +15,8 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.bnds.audioplayer.*
 import com.bnds.audioplayer.fileTools.*
+import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.tag.FieldKey
 import kotlin.random.Random
 
 class PlayerService : Service() {
@@ -362,7 +364,7 @@ class PlayerService : Service() {
         if (musicList.isEmpty() || musicListPosition == -1) getString(R.string.defualt_playing)
         else musicList[musicListPosition].title
 
-    private fun getThisArtist(): String =
+    fun getThisArtist(): String =
         if (musicList.isEmpty() || musicListPosition == -1) getString(R.string.unknown_artisit)
         else musicList[musicListPosition].artist
 
@@ -378,6 +380,22 @@ class PlayerService : Service() {
     fun getDuration(): Long = mediaPlayer?.duration ?: 100000
 
     fun getProgress(): Long = mediaPlayer?.currentPosition ?: 0
+
+    fun getCurrentLyricsWithTime(): List<LyricLine>? {
+        return null
+    }
+
+    fun getCurrentLyricsOnly(): String? {
+        val filePath = FileScanner.getFilePathFromUri(this,musicList[musicListPosition].uri) ?: return null
+        val file = java.io.File(filePath)
+        val audioFile = AudioFileIO.read(file)
+        val tag = audioFile.tag ?: return null
+
+        // 尝试读取歌词字段
+        val lyrics = tag.getFirst(FieldKey.LYRICS)
+        if (!lyrics.isNullOrBlank()) return lyrics
+        return null
+    }
 
     fun startPlaying(new: Boolean, position: Int, speed: Float) {
         playbackSpeed = speed
