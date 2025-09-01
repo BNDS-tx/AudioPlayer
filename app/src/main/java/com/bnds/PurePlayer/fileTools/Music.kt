@@ -1,4 +1,4 @@
-package com.bnds.audioplayer.fileTools
+package com.bnds.PurePlayer.fileTools
 
 import android.graphics.Bitmap
 import android.net.Uri

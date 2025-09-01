@@ -1,4 +1,4 @@
-package com.bnds.audioplayer
+package com.bnds.PurePlayer
 
 import android.content.Intent
 import android.content.res.Configuration

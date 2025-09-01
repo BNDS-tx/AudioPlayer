@@ -1,11 +1,11 @@
 <resources>
-    <string name="app_name" translatable="false">AudioPlayer</string>
+    <string name="app_name" translatable="false">PurePlayer</string>
 
     <string name="menu_settings">Settings</string>
 
     <string name="title_activity_settings">Settings</string>
 
-    <string name="title_activity_player">AudioPlayer: No Current File</string>
+    <string name="title_activity_player">PurePlayer: No Current File</string>
 
     <!-- Preference Titles -->
 

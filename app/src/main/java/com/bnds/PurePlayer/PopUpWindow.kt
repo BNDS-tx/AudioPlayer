@@ -1,7 +1,7 @@
-package com.bnds.audioplayer
+package com.bnds.PurePlayer
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.bnds.audioplayer.services.*
+import com.bnds.PurePlayer.services.*
 
 class PopUpWindow(private val playerService: PlayerService) {
     fun popupMarker(musicPosition: Int, speed: Float) {

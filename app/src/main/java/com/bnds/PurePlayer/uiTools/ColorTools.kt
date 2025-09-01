@@ -1,8 +1,7 @@
-package com.bnds.audioplayer.uiTools
+package com.bnds.PurePlayer.uiTools
 
 import android.app.Activity
 import android.content.res.ColorStateList
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.util.TypedValue
@@ -13,7 +12,7 @@ import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.graphics.ColorUtils
 import androidx.palette.graphics.Palette
-import com.bnds.audioplayer.*
+import com.bnds.PurePlayer.*
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
 

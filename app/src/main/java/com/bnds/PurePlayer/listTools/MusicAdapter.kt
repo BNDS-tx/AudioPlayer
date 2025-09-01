@@ -1,4 +1,4 @@
-package com.bnds.audioplayer.listTools
+package com.bnds.PurePlayer.listTools
 
 import android.view.LayoutInflater
 import android.view.View
@@ -7,9 +7,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.bnds.audioplayer.fileTools.*
-import com.bnds.audioplayer.*
-import com.bnds.audioplayer.uiTools.*
+import com.bnds.PurePlayer.fileTools.*
+import com.bnds.PurePlayer.*
+import com.bnds.PurePlayer.uiTools.*
 
 class MusicAdapter(
     private var musicList: List<Music>,

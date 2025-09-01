@@ -1,12 +1,12 @@
-package com.bnds.audioplayer.uiTools
+package com.bnds.PurePlayer.uiTools
 
 import android.content.res.Configuration
 import android.widget.ImageView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
-import com.bnds.audioplayer.*
-import com.bnds.audioplayer.fileTools.LyricLine
-import com.bnds.audioplayer.listTools.LyricsAdapter
+import com.bnds.PurePlayer.*
+import com.bnds.PurePlayer.fileTools.LyricLine
+import com.bnds.PurePlayer.listTools.LyricsAdapter
 import com.google.android.material.slider.Slider
 
 class UIAdapter(private val activity: PlayActivity) {

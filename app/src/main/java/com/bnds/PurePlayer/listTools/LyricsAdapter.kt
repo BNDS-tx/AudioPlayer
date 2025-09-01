@@ -1,4 +1,4 @@
-package com.bnds.audioplayer.listTools
+package com.bnds.PurePlayer.listTools
 
 import android.content.res.ColorStateList
 import android.graphics.Typeface
@@ -7,8 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.bnds.audioplayer.R
-import com.bnds.audioplayer.fileTools.*
+import com.bnds.PurePlayer.R
+import com.bnds.PurePlayer.fileTools.*
 
 class LyricsAdapter(
     private val lyrics: List<LyricLine>,

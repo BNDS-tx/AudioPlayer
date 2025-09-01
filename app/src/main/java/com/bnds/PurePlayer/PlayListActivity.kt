@@ -1,4 +1,4 @@
-package com.bnds.audioplayer
+package com.bnds.PurePlayer
 
 import android.content.ComponentName
 import android.content.Intent
@@ -24,11 +24,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bnds.audioplayer.databinding.ActivityPlayListBinding
-import com.bnds.audioplayer.fileTools.*
-import com.bnds.audioplayer.listTools.*
-import com.bnds.audioplayer.services.*
-import com.bnds.audioplayer.uiTools.*
+import com.bnds.PurePlayer.databinding.ActivityPlayListBinding
+import com.bnds.PurePlayer.fileTools.*
+import com.bnds.PurePlayer.listTools.*
+import com.bnds.PurePlayer.services.*
+import com.bnds.PurePlayer.uiTools.*
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textview.MaterialTextView
 

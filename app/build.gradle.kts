@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.bnds.audioplayer"
-    compileSdk = 35
+    namespace = "com.bnds.PurePlayer"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.bnds.audioplayer"
+        applicationId = "com.bnds.PurePlayer"
         minSdk = 30
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 

@@ -1,4 +1,4 @@
-package com.bnds.audioplayer.listTools
+package com.bnds.PurePlayer.listTools
 
 import android.content.Context
 import androidx.recyclerview.widget.LinearLayoutManager

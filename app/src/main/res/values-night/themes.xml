@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.AudioPlayer" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.PurePlayer" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">#C4D0E6</item>
         <item name="colorPrimaryContainer">#2D4C83</item>
@@ -10,15 +10,15 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="Theme.AudioPlayer.NoActionBar" parent="Theme.AudioPlayer">
+    <style name="Theme.PurePlayer.NoActionBar" parent="Theme.PurePlayer">
         <item name="windowActionBar">true</item>
         <item name="windowNoTitle">true</item>
     </style>
 
-    <style name="Theme.AudioPlayer.MD3Button" parent="Theme.AudioPlayer" />
+    <style name="Theme.PurePlayer.MD3Button" parent="Theme.PurePlayer" />
 
     <!-- 样式用于扩展状态的标题 -->
-    <style name="ExpandedTitleTextAppearance" parent="Theme.AudioPlayer">
+    <style name="ExpandedTitleTextAppearance" parent="Theme.PurePlayer">
         <item name="android:textSize">40sp</item> <!-- 自定义字体大小 -->
         <item name="android:fontFamily">sans-serif-medium</item> <!-- 其他属性可选 -->
     </style>

@@ -1,8 +1,8 @@
-package com.bnds.audioplayer.uiTools
+package com.bnds.PurePlayer.uiTools
 
 import android.widget.ImageView
 import com.google.android.material.button.MaterialButton
-import com.bnds.audioplayer.*
+import com.bnds.PurePlayer.*
 import java.util.Locale
 
 class IconTools {

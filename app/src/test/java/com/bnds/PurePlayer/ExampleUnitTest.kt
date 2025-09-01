@@ -1,4 +1,4 @@
-package com.bnds.audioplayer
+package com.bnds.PurePlayer
 
 import org.junit.Test
 

@@ -1,4 +1,4 @@
-package com.bnds.audioplayer.fileTools
+package com.bnds.PurePlayer.fileTools
 
 import android.content.ContentResolver
 import android.content.Context
@@ -9,7 +9,7 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
-import com.bnds.audioplayer.*
+import com.bnds.PurePlayer.*
 import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 

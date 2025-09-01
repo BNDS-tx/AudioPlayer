@@ -1,4 +1,4 @@
-package com.bnds.audioplayer.services
+package com.bnds.PurePlayer.services
 
 import android.app.*
 import android.content.*
@@ -13,8 +13,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import com.bnds.audioplayer.*
-import com.bnds.audioplayer.fileTools.*
+import com.bnds.PurePlayer.*
+import com.bnds.PurePlayer.fileTools.*
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import kotlin.random.Random
